@@ -1,0 +1,43 @@
+GBM problem 4 experiment; self-selected S0=100, mu=.05, sigma=.30, T=1
+seed=2026090804; paths=160000; independent pilot=20000; batch=2000; finest N=1024
+Independent-pilot control fit finished in 2.9s
+Main simulation: 40,000/160,000 paths; elapsed 8.6s
+Main simulation: 80,000/160,000 paths; elapsed 14.1s
+Main simulation: 120,000/160,000 paths; elapsed 19.6s
+Main simulation: 160,000/160,000 paths; elapsed 25.1s
+{
+  "slopes": {
+    "EM": {
+      "strong_l1_all_8": 0.49679530370571384,
+      "strong_l1_finest_5": 0.4999467662757965,
+      "weak_cv_all_8": 1.0002582488328722,
+      "weak_cv_finest_5": 0.9987403943498946,
+      "weak_analytic_all_8": 0.9992663099474133
+    },
+    "Milstein": {
+      "strong_l1_all_8": 0.9752016619365793,
+      "strong_l1_finest_5": 0.9909184473258342,
+      "weak_cv_all_8": 0.9988170739285964,
+      "weak_cv_finest_5": 1.000390410219316,
+      "weak_analytic_all_8": 0.9992663099474133
+    }
+  },
+  "exact_moments": {
+    "analytic_mean": 105.12710963760242,
+    "analytic_variance": 1040.7867958160386,
+    "empirical_mean": 105.19874699598807,
+    "empirical_variance": 1045.0119517206772,
+    "empirical_mean_se": 0.0808166115242048,
+    "mean_z": 0.8864187329136214,
+    "variance_relative_error": 0.00405957869721596
+  },
+  "checks": {
+    "all_finite": true,
+    "strong_errors_decrease": true,
+    "all_cv_weak_biases_negative": true,
+    "max_abs_cv_z_vs_analytic": 1.3805900871231211,
+    "note": "A 95% interval need not contain the truth at every level; levels are correlated by Brownian coupling.",
+    "total_nonpositive_terminal_count_across_levels": 0
+  }
+}
+Completed in 30.9s; figures and CSV/JSON saved under D:\桌面2026\problem4_solution

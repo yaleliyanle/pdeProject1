@@ -1,0 +1,365 @@
+{
+  "experiment": "Problem 4: GBM numerical SDE experiment",
+  "parameter_source": "Self-selected GBM benchmark; not specified by the assignment",
+  "parameters": {
+    "S0": 100.0,
+    "mu": 0.05,
+    "sigma": 0.3,
+    "T": 1.0
+  },
+  "seed": 2026090804,
+  "pilot_seed": 2026090805,
+  "path_figure_seed": 2026090806,
+  "paths": 160000,
+  "pilot_paths": 20000,
+  "batch_size": 2000,
+  "finest_steps": 1024,
+  "step_counts": [
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024
+  ],
+  "strong_error": "Terminal L1: sample mean of abs(S_h(T)-S_exact(T))",
+  "weak_observable": "f(s)=s; signed bias E[S_h(T)]-E[S_exact(T)]",
+  "coupling": "Fine increments aggregated for every coarse time step; same exact ST on every level",
+  "confidence_intervals": "Pointwise normal 95% Monte Carlo intervals; no discretization or slope uncertainty included",
+  "control_variates": {
+    "description": "Five exactly centered Gaussian-tilt controls; centered OLS fitted only on an independent pilot",
+    "features": [
+      "ST/M - 1",
+      "ST/M*(W-sigma*T)/sqrt(T)",
+      "ST/M*(Q-sigma^2*T*h)/sqrt(2*T*h)",
+      "ST/M*(H3-sigma^3*T*h^2)/sqrt(6*T*h^2)",
+      "ST/M*(Q^2-[2*T*h+4*sigma^2*T*h^2+sigma^4*T^2*h^2])/(sqrt(8)*T*h)"
+    ],
+    "definitions": "M=E[ST]; Q=sum(dW^2-h); H3=sum(dW^3-3*h*dW); W=sum(dW)",
+    "betas_by_level_feature_method": [
+      [
+        [
+          -0.01841613451053857,
+          -0.013221345497251595
+        ],
+        [
+          0.15931056951557884,
+          -0.20107156445472243
+        ],
+        [
+          -2.3964839686970394,
+          0.03233735220230468
+        ],
+        [
+          0.2796485245188496,
+          -0.14347052861915807
+        ],
+        [
+          0.014912456400618418,
+          0.010301297190182458
+        ]
+      ],
+      [
+        [
+          -0.007364730508171822,
+          -0.00762663396694933
+        ],
+        [
+          0.07877074530579264,
+          -0.09943381549847385
+        ],
+        [
+          -1.6863116766318595,
+          0.01263218487871897
+        ],
+        [
+          0.14094888297334732,
+          -0.07139822089256033
+        ],
+        [
+          0.01269324532359325,
+          0.002644570557560053
+        ]
+      ],
+      [
+        [
+          -0.003701396244874514,
+          -0.004221240487009989
+        ],
+        [
+          0.039435127854238056,
+          -0.049465180119989204
+        ],
+        [
+          -1.1883406912245826,
+          0.004811232611984601
+        ],
+        [
+          0.07151191178434835,
+          -0.03599037233007314
+        ],
+        [
+          0.007690106514184615,
+          0.0007391657154746457
+        ]
+      ],
+      [
+        [
+          -0.0021797186969583914,
+          -0.001988273840230626
+        ],
+        [
+          0.019762896147851268,
+          -0.02470240851696864
+        ],
+        [
+          -0.8384291988987669,
+          0.001763744508326596
+        ],
+        [
+          0.035971499256038986,
+          -0.018045223476100943
+        ],
+        [
+          0.004232366711379054,
+          0.00020482700199464236
+        ]
+      ],
+      [
+        [
+          -0.0008647109903456227,
+          -0.0010996494962244485
+        ],
+        [
+          0.009817845962773299,
+          -0.012312386696579903
+        ],
+        [
+          -0.5921234858318843,
+          0.0006331043366136098
+        ],
+        [
+          0.018047490360414357,
+          -0.00903742499807052
+        ],
+        [
+          0.0022210124609921083,
+          5.6665172945536534e-05
+        ]
+      ],
+      [
+        [
+          -0.00044604006879282385,
+          -0.0005368106452105123
+        ],
+        [
+          0.004910884028416507,
+          -0.006157008264520246
+        ],
+        [
+          -0.41842569310430966,
+          0.00022797363491705263
+        ],
+        [
+          0.009034091757480156,
+          -0.004521167466618553
+        ],
+        [
+          0.001143395979531002,
+          1.3831607955189216e-05
+        ]
+      ],
+      [
+        [
+          -0.0002476504273587788,
+          -0.0002583335222301777
+        ],
+        [
+          0.0024609671999312292,
+          -0.003079964989096316
+        ],
+        [
+          -0.2957705992715998,
+          8.038281388637909e-05
+        ],
+        [
+          0.004522521569694466,
+          -0.00226231787912742
+        ],
+        [
+          0.0005805130576980595,
+          3.183145020132568e-06
+        ]
+      ],
+      [
+        [
+          -0.00013121639711032967,
+          -0.0001252639110939543
+        ],
+        [
+          0.0012334610759628059,
+          -0.0015413766061184463
+        ],
+        [
+          -0.2091058868143704,
+          2.8372295325746787e-05
+        ],
+        [
+          0.002262260460553206,
+          -0.0011314173169030607
+        ],
+        [
+          0.0002917452623669323,
+          8.9087887722821e-07
+        ]
+      ]
+    ]
+  },
+  "slopes": {
+    "EM": {
+      "strong_l1_all_8": 0.49679530370571384,
+      "strong_l1_finest_5": 0.4999467662757965,
+      "weak_cv_all_8": 1.0002582488328722,
+      "weak_cv_finest_5": 0.9987403943498946,
+      "weak_analytic_all_8": 0.9992663099474133
+    },
+    "Milstein": {
+      "strong_l1_all_8": 0.9752016619365793,
+      "strong_l1_finest_5": 0.9909184473258342,
+      "weak_cv_all_8": 0.9988170739285964,
+      "weak_cv_finest_5": 1.000390410219316,
+      "weak_analytic_all_8": 0.9992663099474133
+    }
+  },
+  "exact_terminal_moments": {
+    "analytic_mean": 105.12710963760242,
+    "analytic_variance": 1040.7867958160386,
+    "empirical_mean": 105.19874699598807,
+    "empirical_variance": 1045.0119517206772,
+    "empirical_mean_se": 0.0808166115242048,
+    "mean_z": 0.8864187329136214,
+    "variance_relative_error": 0.00405957869721596
+  },
+  "finest_step_errors": [
+    {
+      "method": "EM",
+      "N": 1024,
+      "h": 0.0009765625,
+      "strong_l1": 0.16658118859997678,
+      "strong_se": 0.0003536978075216224,
+      "strong_l1_ci_low": 0.16588795363582362,
+      "strong_l1_ci_high": 0.16727442356412994,
+      "weak_bias_paired": 0.0007152284980943099,
+      "weak_paired_se": 0.0005463818291831111,
+      "weak_bias_paired_ci_low": -0.00035566020891170385,
+      "weak_bias_paired_ci_high": 0.0017861172051003237,
+      "weak_bias_cv": -0.00012835951492482775,
+      "weak_cv_se": 8.414985724090105e-08,
+      "weak_bias_cv_ci_low": -0.0001285244456143241,
+      "weak_bias_cv_ci_high": -0.0001281945842353314,
+      "analytic_mean_bias": -0.0001283247357125384,
+      "cv_variance_reduction": 42158556.121787734,
+      "cv_z_vs_analytic": -0.41330090661702873
+    },
+    {
+      "method": "Milstein",
+      "N": 1024,
+      "h": 0.0009765625,
+      "strong_l1": 0.0015327998832329775,
+      "strong_se": 3.6157592969580035e-06,
+      "strong_l1_ci_low": 0.0015257131252341739,
+      "strong_l1_ci_high": 0.001539886641231781,
+      "weak_bias_paired": -0.0001359524820603466,
+      "weak_paired_se": 5.257614371331095e-06,
+      "weak_bias_paired_ci_low": -0.00014625721687275576,
+      "weak_bias_paired_ci_high": -0.00012564774724793746,
+      "weak_bias_cv": -0.00012830821023232246,
+      "weak_cv_se": 4.155346312455296e-08,
+      "weak_bias_cv_ci_low": -0.0001283896535234795,
+      "weak_bias_cv_ci_high": -0.00012822676694116542,
+      "analytic_mean_bias": -0.0001283247357125384,
+      "cv_variance_reduction": 16008.955928779496,
+      "cv_z_vs_analytic": 0.3976920086395952
+    }
+  ],
+  "positivity": {
+    "scope": "Primary benchmark only; sigma^2=.09 < 2*mu=.10, hence all Milstein factors strictly positive",
+    "levels": [
+      {
+        "N": 8,
+        "h": 0.125,
+        "em_one_step_negative_probability": 1.1887120676642086e-21,
+        "milstein_minimum_step_multiplier": 0.500625,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 16,
+        "h": 0.0625,
+        "em_one_step_negative_probability": 4.2326849303180316e-41,
+        "milstein_minimum_step_multiplier": 0.5003125,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 32,
+        "h": 0.03125,
+        "em_one_step_negative_probability": 7.485105878441263e-80,
+        "milstein_minimum_step_multiplier": 0.50015625,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 64,
+        "h": 0.015625,
+        "em_one_step_negative_probability": 3.2870762445328754e-157,
+        "milstein_minimum_step_multiplier": 0.500078125,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 128,
+        "h": 0.0078125,
+        "em_one_step_negative_probability": 8.933028508525e-312,
+        "milstein_minimum_step_multiplier": 0.5000390625,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 256,
+        "h": 0.00390625,
+        "em_one_step_negative_probability": 0.0,
+        "milstein_minimum_step_multiplier": 0.50001953125,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 512,
+        "h": 0.001953125,
+        "em_one_step_negative_probability": 0.0,
+        "milstein_minimum_step_multiplier": 0.500009765625,
+        "milstein_one_step_negative_probability": 0.0
+      },
+      {
+        "N": 1024,
+        "h": 0.0009765625,
+        "em_one_step_negative_probability": 0.0,
+        "milstein_minimum_step_multiplier": 0.5000048828125,
+        "milstein_one_step_negative_probability": 0.0
+      }
+    ]
+  },
+  "checks": {
+    "all_finite": true,
+    "strong_errors_decrease": true,
+    "all_cv_weak_biases_negative": true,
+    "max_abs_cv_z_vs_analytic": 1.3805900871231211,
+    "note": "A 95% interval need not contain the truth at every level; levels are correlated by Brownian coupling.",
+    "total_nonpositive_terminal_count_across_levels": 0
+  },
+  "runtime_seconds_before_figures": 25.687204000001657,
+  "runtime_seconds": 30.884574800002156,
+  "environment": {
+    "python": "3.12.14",
+    "numpy": "2.5.3",
+    "matplotlib": "3.11.1",
+    "platform": "Windows-10-10.0.19045-SP0"
+  },
+  "timing_note": "runtime_seconds includes RNG, independent pilot, production simulation, result preparation, and figure generation. Non-affine timings are measured separately and are not a matched-work comparison."
+}

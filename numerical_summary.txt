@@ -1,0 +1,27 @@
+Problem 4 Financial SDE Coursework - completed run
+==========================================================
+GBM production paths: 160000; independent pilot: 20000
+Strong slopes (N=64,128,256,512,1024):
+  EM: 0.49994677
+  Milstein: 0.99091845
+Controlled weak mean slopes (same window):
+  EM: 0.99874039
+  Milstein: 1.00039041
+Analytic weak mean slope (all 8 grids): 0.99926631
+GBM elapsed, including pilot, production and figures: 30.88 s
+
+Non-affine paths: 100000
+Reference step counts: [2048, 4096, 8192]
+Principal strong window: [8, 16, 32, 64]
+Empirical strong slope: 0.49145004
+Final reference strong difference: 0.04015705
+Last reference difference/coarse strong error: 3.20% to 8.89% on principal window
+Unresolved paired payoff bias (95% CI includes zero), N=[64, 128, 256]
+Finest terminal mean: 105.08795751, CI [104.89962479, 105.27629024]
+Finest undiscounted payoff mean: 14.53804244, CI [14.40515246, 14.67093242]
+Non-affine elapsed: 107.80 s (JIT warmup separately logged)
+
+No theoretical weak order is claimed for the non-affine payoff.
+Reference discrepancies are numerical evidence, not exact-solution errors.
+Pointwise Monte Carlo intervals do not cover discretization uncertainty.
+See results/verification.json for independent checks and README.md for reproduction.

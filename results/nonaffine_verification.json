@@ -1,0 +1,13 @@
+{
+  "compiled_vs_numpy_fixture_max_abs_difference": 0.0,
+  "compiled_vs_numpy_fixture_steps": [
+    8,
+    16,
+    64
+  ],
+  "terminal_npz_all_rows_max_mean_difference": 4.440892098500626e-16,
+  "terminal_npz_all_rows_max_standard_error_difference": 3.0357660829594124e-18,
+  "total_path_updates": 1484000000,
+  "fit_window_reference_screen_passed": true,
+  "three_main_figures_visually_reviewed": true
+}

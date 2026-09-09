@@ -19,5 +19,6 @@ python tutorial1/euler_skeleton.py
 The Van der Pol experiment follows the slides exactly: `mu=1`,
 `y0=(0.5, 0)`, `T=10`, and `h=(0.1, 0.05, 0.025, 0.0125)`. The script prints
 the observed first-order convergence and oracle `y1(T)` to three decimals.
-It also writes `tutorial1/figures/vanderpol_phase_plane.png`; generated
-figures and numerical output are intentionally ignored by Git.
+It also writes `tutorial1/figures/vanderpol_phase_plane.png`, the requested
+parametric curve `(y1(t), y2(t))` for `0 <= t <= 10`; generated figures and
+numerical output are intentionally ignored by Git.

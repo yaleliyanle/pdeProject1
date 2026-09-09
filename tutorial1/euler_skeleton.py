@@ -122,7 +122,8 @@ def run_checks(output_dir: Path) -> dict[str, float]:
     fig, ax = plt.subplots(figsize=(6.2, 5.0))
     ax.plot(trajectory[:, 0], trajectory[:, 1], color="#2c7fb8", linewidth=1.2)
     ax.scatter([y0[0]], [y0[1]], color="#d95f02", s=24, zorder=3, label="initial state")
-    ax.set(xlabel=r"$y_1$", ylabel=r"$y_2$", title="Van der Pol phase plane ($\\mu=1$)")
+    ax.set(xlabel=r"$y_1(t)$", ylabel=r"$y_2(t)$",
+           title=r"Van der Pol parametric curve ($\mu=1$, $0\leq t\leq 10$)")
     ax.grid(alpha=0.25)
     ax.legend(frameon=False)
     fig.tight_layout()

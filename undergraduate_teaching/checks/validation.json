@@ -1,11 +1,11 @@
 {
-  "pages": 18,
+  "pages": 19,
   "typesetting_issues": [],
-  "visual_review": "All 18 pages; enlarged review of the code appendix",
+  "visual_review": "All 19 pages from the previous review plus the new Euler/grid transition section",
   "core_code_checks": "PASS: fixed increments only; not a statistical convergence test",
   "sample_size_table": "Matches existing saved study to printed precision",
   "new_experiments": 0,
-  "pdf_sha256": "f0e77be1cfc2ddfa45db073d749cbf6ee4ac2837f4620a17f193ba8409f69dbf",
+  "pdf_sha256": "0abbf7b1d08dfa2fb80383360f829597965ef580424ae06419b95ddf3d331765",
   "source_report_commit": "282688a",
   "build_note": "Chinese Noto CJK fonts must be installed to recompile"
 }

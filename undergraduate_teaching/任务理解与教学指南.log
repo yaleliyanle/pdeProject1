@@ -698,7 +698,7 @@ File: mt-cmr.cfg 2013/05/19 v2.2 microtype config. file: Computer Modern Roman
 \tf@toc=\write4
 \openout4 = `任务理解与教学指南.toc'.
 
- [2] [3] [4]
+ [2] [3] [4] [5]
 
 Package fontspec Info: Could not resolve font "Noto Sans Mono CJK SC/I" (it
 (fontspec)             probably doesn't exist).
@@ -724,19 +724,19 @@ Package fontspec Info: Font family 'NotoSansMonoCJKSC(0)' created for font
 (fontspec)             Mono CJK SC/BI/OT:script=hani;language=dflt;"
 (fontspec)             - 'bold italic small caps'  (b/scit) with NFSS spec.: 
 
- [5] [6] [7] [8]
-[9] [10] [11] [12] [13] (sample_size_table.tex) [14] [15] [16]
+ [6] [7] [8]
+[9] [10] [11] [12] [13] [14] (sample_size_table.tex) [15] [16] [17]
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 461.
+nput line 493.
 
 (teaching_core.py
 consecutive:
-) [17] (lstlang1.sty
+) [18] (lstlang1.sty
 File: lstlang1.sty 2020/03/24 1.8d listings language file
 ) (lstlang1.sty
 File: lstlang1.sty 2020/03/24 1.8d listings language file
-) [18] (任务理解与教学指南.aux)
+) [19] (任务理解与教学指南.aux)
 Package rerunfilecheck Info: File `任务理解与教学指南.out' has not changed.
 (rerunfilecheck)             Checksum: D78271E6DFA4EE946A08D5F8AE1C8CC8;2668.
  )
-Output written on 任务理解与教学指南.xdv (18 pages, 238348 bytes).
+Output written on 任务理解与教学指南.xdv (19 pages, 248056 bytes).

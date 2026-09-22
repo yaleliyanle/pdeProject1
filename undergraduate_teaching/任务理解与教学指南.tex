@@ -1,0 +1,481 @@
+\documentclass[11pt,a4paper,fontset=none]{ctexart}
+\usepackage[margin=24mm]{geometry}
+\usepackage{fontspec}
+\setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC Bold},ItalicFont={Noto Serif CJK SC},SlantedFont={Noto Serif CJK SC}]
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\usepackage{amsmath,amssymb,booktabs,tabularx,graphicx,float,xcolor,listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage{microtype}
+\linespread{1.12}
+\setlength{\emergencystretch}{2em}
+\setcounter{tocdepth}{1}
+\lstset{language=Python,basicstyle=\ttfamily\footnotesize,breaklines=true,
+frame=single,showstringspaces=false,columns=fullflexible,keepspaces=true,
+keywordstyle=\color{blue!65!black},commentstyle=\color{green!40!black},numbers=none}
+\newcommand{\E}{\mathbb E}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\R}{\mathbb R}
+\title{怎样理解这次随机微分方程大作业？\\[4pt]
+\large 面向数值 PDE 课程的应用数学本科生\\从概率论基础到数值实验与报告解释}
+\author{配套教学文档}
+\date{2026 年 9 月}
+\begin{document}
+\maketitle
+\noindent\textbf{阅读起点。}假设你学过微积分、概率论，以及数值 PDE 中的网格、离散格式和误差分析，但没有金融、随机微积分或随机微分方程基础。本文按这个起点讲解，不要求你先学完整的金融数学课程。
+
+\medskip
+\noindent\textbf{这份作业的核心。}给定一个带随机扰动的连续时间模型，设计离散计算，选择合适的误差指标，并用可复现的证据说明计算结果有多可信。资产价格只是模型背景；主要工作仍然是数值分析。
+
+\medskip
+\noindent\textbf{与现有报告的关系。}本文解释 problem pack 第四题和当前本科版报告的数学逻辑。它是一份学习指南，不替代提交报告。文中结果来自已有实验，只复述已经完成的一个样本量实验，不新增大规模计算。
+
+\newpage
+\tableofcontents
+\vfill
+\noindent\small 建议读法：先读第~\ref{sec:task}--\ref{sec:mc}~节，理解题意和误差；再读模型与代码；最后用第~\ref{sec:readresults}~节核对报告中的结论。
+
+\newpage
+\section{先把题目翻译成数值分析问题}\label{sec:task}
+你在数值 PDE 中可能熟悉这样的流程：先找一个有解析解的例子检查程序，再解决没有解析解的问题；逐渐减小网格间距，观察误差是否按预期下降。这道题沿用同样的思想，但解变成了随机量，误差的定义和测量方法必须随之改变。
+
+\begin{table}[H]\centering\small
+\begin{tabularx}{\textwidth}{@{}XX@{}}\toprule
+数值 PDE 中熟悉的概念 & 本题中的对应问题\\\midrule
+有解析解的测试算例 & GBM：可以得到同一随机驱动下的精确终值\\
+时间离散格式 & Euler--Maruyama（EM）与 Milstein 更新\\
+误差范数 & 终值强误差，或某个观测量的弱误差\\
+网格加密实验 & 步长 $h=T/N$ 逐渐减小\\
+高分辨率参考解 & 无精确采样公式时使用很细的 EM 网格\\
+数值积分或统计估计 & 多条独立路径近似期望，并报告标准误差\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{先读清任务边界。}题目首页说明，第四题是 SDE 扩展方向：通常的确定性稳定性、自适应分析，由 GBM 的精确--EM--Milstein 比较、耦合路径的强弱收敛、蒙特卡洛不确定性以及非仿射模型的嵌套网格验证替代。因此，不必为了凑形式另加三个 PDE 格式、CFL 图或自适应算法。GBM 的“精确模拟”是基准，它不具有待测的非零离散误差阶。
+
+\textbf{第一部分是明确列出的 GBM 检查：}
+\begin{enumerate}
+\item 强误差随步长变化：EM 预期半阶，Milstein 预期一阶。
+\item 终值均值的弱误差：两者预期一阶，需控制抽样噪声。
+\item 终值分布与理论对数正态分布比较。
+\item 正值性在原题中标为选做；现有报告已保留这一诊断。
+\end{enumerate}
+题目第 7 页进一步给出非仿射随机波动率模型，要求使用指定参数及 EM 更新；其后几项以“推荐扩展”列出。当前报告已经选择完成这部分，所以应把它解释清楚：用三层参考检查强差，估计非线性收益差及其区间，并核查生成的噪声与状态。不要把推荐扩展的每一项都改说成全课程统一的硬性要求。
+
+\textbf{应交付的证据。}每个结论都应能回答：比较的是什么，使用了哪些网格和路径数，误差如何计算，不确定性有多大，以及结论在哪个范围内成立。
+
+\newpage
+\section{没有金融背景也能读懂的模型词汇}
+用 $S_t$ 表示时刻 $t$ 的一个正数状态。在金融背景下它叫资产价格；在数值分析中，你可以先把它看成一个随时间随机变化的标量。
+
+\begin{table}[H]\centering
+\begin{tabularx}{\textwidth}{@{}lX@{}}\toprule
+符号或术语 & 在本题中需要的含义\\\midrule
+$S_0$ & 初值，本实验取 100。\\
+$\mu$：漂移 & 模型中平均增长的系数，不表示每条路径都按该速度增长。\\
+$\sigma$：波动率 & 随机扰动的强度，不是价格本身的方差。\\
+$T$ & 观察终点，本实验取 1；可理解为一个时间单位。\\
+$X=\log S$ & 变量变换，用 $S=e^X$ 保证数学上的正值。\\
+$K$：执行价 & 定义观测函数时使用的阈值，本题取 100。\\
+$\varphi(S)=(S-K)^+$ & $\max(S-K,0)$，称为看涨收益。\\\bottomrule
+\end{tabularx}
+\end{table}
+
+例如，终值分别为 80、100、120 时，$\varphi(S)$ 分别为 0、0、20。对我们来说，它就是一个非线性测试函数，用于考察数值方法是否正确计算终值分布的某一方面。理解这个函数不需要期权交易知识。
+
+\textbf{均值和收益期望是两个不同的观测量。}假设状态始终为 100，则均值为 100，收益期望为 0。假设状态以各 $1/2$ 的概率为 80 或 120，则均值仍为 100，但收益期望为 10。于是，正确的均值不保证正确的非线性观测量。这和一个 PDE 离散解总质量正确、局部形状却可能不正确的情形相似。
+
+本文只研究题目给定模型下的期望收益。题目没有提供风险中性定价所需的测度说明与贴现设定，所以不用把 $\E[(S_T-100)^+]$ 叫作已经完成的期权定价。
+
+\subsection*{为什么先研究一个已有精确公式的模型？}
+它的用途类似你用热方程的已知解验证差分格式：先把“程序错误”和“未知真解”分开。GBM 提供非常强的基准，可以对同一次随机扰动比较精确解和数值解。等这一步通过后，再把同样的实验设计用于没有方便精确解的模型。
+
+这里的精确指网格点转移分布与模型一致，没有时间离散误差；有限精度运算和有限样本估计仍然存在。即使精确抽样，样本均值也不会恰好等于理论均值。
+
+\newpage
+\section{随机扰动怎样进入时间推进？}
+先看普通 Euler 方法。对于 $u'=a(u)$，一步是
+\[
+u_{n+1}=u_n+a(u_n)h.
+\]
+随机微分方程写成
+\begin{equation}\label{eq:sde}
+dS_t=a(S_t)\,dt+b(S_t)\,dW_t.
+\end{equation}
+它的含义来自积分方程：
+\[
+S_t=S_0+\int_0^t a(S_s)\,ds+\int_0^t b(S_s)\,dW_s.
+\]
+第二个积分是随机积分，不能把 $W$ 当成普通可微函数。这里使用 It\^o 约定，其离散近似在每个时间段用左端点状态作为系数。我们先掌握这一约定及其必要后果，不展开完整的随机积分理论。
+
+\subsection*{布朗运动：足以写程序的三个性质}
+标准布朗运动从 $W_0=0$ 出发，增量满足：
+\begin{enumerate}
+\item 长度为 $h$ 的时间段上，$\Delta W\sim N(0,h)$。
+\item 不重叠时间段上的增量相互独立。
+\item 连续路径通常不可微，所以不应使用普通导数 $W'(t)$ 做数值推进。
+\end{enumerate}
+因此生成增量时必须使用
+\begin{equation}\label{eq:increment}
+\Delta W_n=\sqrt h\,Z_n,\qquad Z_n\sim N(0,1).
+\end{equation}
+这里 $N(0,h)$ 的第二个参数是方差；NumPy 的 \texttt{normal} 接收的 \texttt{scale} 是标准差，应传入 $\sqrt h$。
+
+\textbf{为什么不能用 $hZ$？}因为 $\Var(hZ)=h^2$。如果用 $T/h$ 个这样的独立增量，总方差只有 $Th$，随网格加密趋于零，原本需要保留的随机效应会被错误地消掉。用 $\sqrt h Z$，总方差则为 $(T/h)h=T$。
+
+于是式~\eqref{eq:sde} 的最简单离散化为
+\begin{equation}\label{eq:em-general}
+S_{n+1}=S_n+a(S_n)h+b(S_n)\Delta W_n.
+\end{equation}
+这就是 EM。形式上像 Euler 多了一个噪声项，但误差阶不能直接从 ODE 的 Euler 方法搬过来：随机增量的典型尺度是 $\sqrt h$，不是 $h$。
+
+\newpage
+\section{为什么变量变换会多出半个二阶导数？}\label{sec:ito}
+普通微积分中，若 $X=f(S)$，你会写 $dX=f'(S)dS$。随机情形中还必须保留一个二阶项。理解这一点，就能理解题目中最容易困惑的 $-\sigma^2/2$。
+
+\subsection*{从 Taylor 展开看需要保留什么}
+形式上展开一步：
+\[
+\Delta f\approx f'(S)\Delta S+\tfrac12 f''(S)(\Delta S)^2.
+\]
+由于 $\Delta S\approx ah+b\Delta W$，而 $(\Delta W)^2$ 的期望为 $h$，二阶项累计后不会消失。更具体地，对独立正态增量，
+\[
+\E\sum_{n=0}^{N-1}(\Delta W_n)^2=Nh=T,
+\quad
+\Var\!\left(\sum_{n=0}^{N-1}(\Delta W_n)^2\right)=2Nh^2=2Th\to0.
+\]
+这说明平方增量之和逼近 $T$。\textbf{这不表示每一步都有 $(\Delta W)^2=h$}；单步平方仍是随机量。以上是 It\^o 修正的直观依据，不是对一般 It\^o 公式的完整证明。
+
+在合适的光滑性条件下，正确公式为
+\begin{equation}\label{eq:ito}
+df(S_t)=\left(a f'+\tfrac12b^2f''\right)(S_t)\,dt
+        +b(S_t)f'(S_t)\,dW_t.
+\end{equation}
+
+\subsection*{应用于 GBM}
+题目模型为 $dS=\mu S\,dt+\sigma S\,dW$。取 $f(S)=\log S$，则 $f'=1/S$，$f''=-1/S^2$。代入式~\eqref{eq:ito}：
+\[
+dX=(\mu-\tfrac12\sigma^2)dt+\sigma dW.
+\]
+两项系数均为常数，积分后再取指数得到
+\begin{equation}\label{eq:gbm-exact}
+S_T=S_0\exp\{(\mu-\tfrac12\sigma^2)T+\sigma W_T\}.
+\end{equation}
+由正态变量的公式 $\E e^{cZ}=e^{c^2/2}$（可通过配方积分验证），
+\[
+\E S_T=S_0e^{\mu T},\qquad
+\Var(S_T)=S_0^2e^{2\mu T}(e^{\sigma^2T}-1).
+\]
+若漏掉 $-\sigma^2/2$，计算出的均值就多出 $e^{\sigma^2T/2}$，已经改变了模型。所谓对数正态分布，正是 $\log S_T$ 服从正态分布。
+
+\newpage
+\section{三个更新公式分别承担什么角色？}
+对同一个增量 $\Delta W_n$，题目比较以下三种计算。
+\begin{align}
+S_{n+1}^{\rm exact}&=S_n^{\rm exact}
+ e^{(\mu-\sigma^2/2)h+\sigma\Delta W_n},\label{eq:exact-step}\\
+S_{n+1}^{E}&=S_n^E(1+\mu h+\sigma\Delta W_n),\label{eq:em-step}\\
+S_{n+1}^{M}&=S_n^M\left[1+\mu h+\sigma\Delta W_n
+ +\tfrac12\sigma^2((\Delta W_n)^2-h)\right].\label{eq:mil-step}
+\end{align}
+式~\eqref{eq:exact-step} 是基准，式~\eqref{eq:em-step} 是价格变量上的 EM，式~\eqref{eq:mil-step} 是价格变量上的 Milstein。
+
+\subsection*{Milstein 的额外项从哪里来？}
+把精确乘子展开，按 $\Delta W$ 的尺度保留到 $h$：
+\[
+e^{(\mu-\sigma^2/2)h+\sigma\Delta W}
+\approx 1+\mu h+\sigma\Delta W
+ +\tfrac12\sigma^2((\Delta W)^2-h).
+\]
+普通 EM 丢掉了最后一个随机修正。它的均值是零，却会影响每一条路径的误差。Milstein 保留它，因此能提高强精度。这是针对 GBM 的直观推导；一般标量 SDE 的对应系数为 $\tfrac12 b(S)b'(S)$，其完整收敛证明需要另外的条件和理论。
+
+\textbf{为什么不用对数变量比较三个方法？}因为 GBM 的 $X$ 方程系数是常数，EM 对它的网格转移已经精确；加性噪声的 Milstein 修正又是零。这样两种方法会退化为相同的精确更新，无法展示半阶和一阶的差别。所以题目明确要求 GBM 的收敛比较在 $S$ 上进行。
+
+\subsection*{正值性与稳定性不要混为一谈}
+精确指数更新为正；EM 乘子可能为负。Milstein 是否为正，要看参数和步长。当前参数 $\mu=0.05,\sigma=0.30$ 下，配方得到
+\[
+1+\mu h+\sigma\Delta W+\tfrac12\sigma^2((\Delta W)^2-h)
+=\tfrac12\sigma^2(\Delta W+1/\sigma)^2+\tfrac12+0.005h>0.
+\]
+这是当前参数的结论，不是对所有 GBM 参数的无条件结论。也不能把“没有负值”或“没有爆炸”当作“误差足够小”。本题无须另做确定性 CFL 分析，但仍应检查有限性、正值性和加密行为。
+
+\newpage
+\section{强误差和弱误差：先明确你要算准什么}\label{sec:errors}
+设 $S_T$ 是精确终值，$S_T^h$ 是数值终值。两者都随机，因此“误差”不再只有一个自然定义。
+
+\textbf{强误差问的是：同一种随机扰动下，终值能否算准？}
+\begin{equation}\label{eq:strong}
+e_s(h)=\E|S_T^h-S_T|.
+\end{equation}
+先在每条对应路径上取绝对误差，再平均。这是终值 $L^1$ 误差，不是时间区间上的最大误差，也不是均方误差；不同定义不能混用。若 $e_s(h)\approx Ch^p$，就称观察到了 $p$ 阶的规律。
+
+\textbf{弱误差问的是：我关心的统计量能否算准？}
+\begin{equation}\label{eq:weak}
+e_w(h)=\left|\E\varphi(S_T^h)-\E\varphi(S_T)\right|.
+\end{equation}
+GBM 部分使用 $\varphi(s)=s$，考察均值。非仿射部分使用 $\varphi(s)=(s-100)^+$，考察非线性收益。
+
+假设三条路径的终值误差是 $1,-1,0$。则平均绝对误差为 $2/3$，带符号的平均误差却为 0。抵消可以使均值比单条路径更准确。因此，“Milstein 路径误差更小”并不自动推出“它的均值偏差也比 EM 小”。
+
+\subsection*{怎样从加密结果理解阶数？}
+若 $e(h)\approx Ch^p$，则
+\[
+\frac{e(h)}{e(h/2)}\approx2^p,
+\qquad p\approx\frac{\log(e(h)/e(h/2))}{\log2}.
+\]
+半阶意味着步长减半时误差乘 $1/\sqrt2$；一阶意味着乘 $1/2$。多层网格的 log--log 拟合是在估计 $\log e=\log C+p\log h$ 的斜率。
+
+\textbf{实验斜率不是理论证明。}需要说明拟合了哪些网格。粗网格可能尚未进入渐近区，极细网格则可能受参考误差或抽样噪声影响。各网格使用共同路径时，误差点也相互相关；不要直接套用独立观测回归的置信区间。
+
+特别地，弱偏差的估计可能正也可能负。先取绝对值再在对数图上拟合，可能把纯粹的噪声画成一条“收敛曲线”。应先检查带符号估计及其不确定性。
+
+\newpage
+\section{为什么还要报告路径数和置信区间？}\label{sec:mc}
+一次计算得到一个随机终值，重复 $M$ 条独立路径才能估计期望。这里有两种完全不同的分辨率：时间步数 $N$ 决定 $h=T/N$，路径数 $M$ 决定统计精度。
+
+设每条路径上计算的量为 $D_i$。它可以是强误差中的绝对差，也可以是弱误差中的带符号收益差。定义
+\[
+\overline D=\frac1M\sum_{i=1}^M D_i,
+\quad s_D^2=\frac1{M-1}\sum_{i=1}^M(D_i-\overline D)^2,
+\quad \operatorname{SE}(\overline D)=\frac{s_D}{\sqrt M}.
+\]
+有限方差与大样本条件下，近似逐点 95\% 置信区间为
+\begin{equation}\label{eq:ci}
+\overline D\ \pm\ 1.96\frac{s_D}{\sqrt M}.
+\end{equation}
+样本标准差 $s_D$ 描述路径间的分散程度，标准误差 SE 描述平均值估计的不确定性。95\% 指在重复抽样中构造的区间约有该覆盖率，不是保证这一次区间必然含有真值；多个步长的逐点区间也不是联合 95\% 保证。
+
+\subsection*{把误差分成三部分}
+设参考步长为 $r$，$b_{h,r}=\E[\varphi(S_T^h)-\varphi(S_T^r)]$，真实目标 $Q=\E\varphi(S_T)$。若 $\widehat b$ 是配对样本平均，则
+\begin{equation}\label{eq:decomposition}
+\widehat b-\bigl(\E\varphi(S_T^h)-Q\bigr)
+=\underbrace{\widehat b-b_{h,r}}_{\text{抽样误差}}
+ +\underbrace{Q-\E\varphi(S_T^r)}_{\text{参考的离散偏差}}.
+\end{equation}
+区间~\eqref{eq:ci} 只衡量第一项，不覆盖第二项。GBM 使用精确参考时第二项为零；非仿射模型则必须检查参考加密。
+
+\textbf{区间跨零意味着什么？}这批数据还不能可靠地区分正偏差、负偏差和零。它不证明真偏差为零，也不自动证明方法失败。题目明确提醒：偏差与抽样不确定性相当时，不应声称测出了弱阶。
+
+\textbf{控制变量的最低限度理解。}若 $\E C=0$，对预先固定的 $\beta$，$\E(D-\beta C)=\E D$。若 $C$ 与 $D$ 相关，适当相减可减小方差。现有 GBM 程序用独立预实验拟合系数，再用于正式样本；它减少噪声，不改变离散格式或真实偏差。初读时无需先掌握五个控制量的全部公式。
+
+\newpage
+\section{网格怎样比较：同一条随机路径是关键}\label{sec:coupling}
+在确定性 PDE 中，换网格不代表换一个初边值问题。同样，在 SDE 强误差实验中，换步长不能顺便换一套随机驱动。
+
+先生成最细网格增量 $\delta W_0,\ldots,\delta W_{N_f-1}$，再把相邻 $r$ 个相加：
+\begin{equation}\label{eq:sum}
+\Delta W_n^{h}=\sum_{j=nr}^{(n+1)r-1}\delta W_j,
+\qquad h=rT/N_f.
+\end{equation}
+例如最细网格 8 步、粗网格 4 步，每两个细增量相加。和的方差为 $2(T/8)=T/4$，正好是粗步长，而且时间端点上对应同一个布朗运动。4 步与 8 步的总增量完全相同。
+
+\begin{lstlisting}
+def coarsen(dw_fine, n_coarse):
+    m, n_fine = dw_fine.shape
+    return dw_fine.reshape(m, n_coarse,
+                           n_fine//n_coarse).sum(axis=2)
+\end{lstlisting}
+这里矩阵的每行是一条路径，每列是一个时间增量。使用此函数前必须保证整除，随附源码包含这个检查。
+
+\textbf{仅仅设相同随机种子并不等于完成耦合。}不同网格消耗随机数的数量和顺序可能不同；应明确用式~\eqref{eq:sum} 聚合，不能凭种子相同就认定路径相同。
+
+如果精确值和数值值来自独立驱动，即使数值法趋于精确，平均绝对差仍会趋于两个独立终值之间的差，而不是零。这样检验的是随机样本差异，不是数值误差。
+
+\subsection*{配对也能帮助弱误差估计}
+设 $A=\varphi(S_T^h)$，$B=\varphi(S_T^r)$。弱误差的目标只涉及各自的分布，理论上不强制配对，但
+\[
+\Var(A-B)=\Var(A)+\Var(B)-2\Cov(A,B).
+\]
+共同随机数通常使相近网格结果高度正相关，因而减少差值的方差。这解释了为什么应直接计算每对差 $D_i=A_i-B_i$ 的标准误差，而不是把两个独立均值的误差公式套过来。
+
+注意两种关系同时成立：\textbf{同一行不同网格要相关，不同行的模拟路径要独立。}前者保证公平比较，后者支持标准误差公式。
+
+\newpage
+\section{非仿射模型：只是多了一个随机变化的系数}\label{sec:nonaffine}
+GBM 的扰动强度 $\sigma$ 不变。第二个模型让它由额外状态 $Y_t$ 决定：
+\begin{align}
+dX_t&=(\mu-\tfrac12g(Y_t)^2)dt+g(Y_t)dW_t^{(1)},\\
+dY_t&=\kappa(\theta-Y_t)dt+\xi\sqrt{1+Y_t^2}\,dW_t^{(2)},\\
+g(y)&=0.10+\frac{0.40}{1+e^{-y}},\qquad S_t=e^{X_t}.
+\end{align}
+这里 $Y$ 是调节噪声强度的辅助状态，可以取负值；真正的波动率 $g(Y)$ 始终在 0.10 与 0.50 之间。$\kappa(\theta-Y)$ 会把 $Y$ 拉回 $\theta$ 附近；$\xi\sqrt{1+Y^2}$ 表示 $Y$ 自身的扰动强度也依赖状态。名称“非仿射”不需要专门的金融背景：这道题需要知道的实际后果是，不能像 GBM 一样直接套用方便的精确转移公式。
+
+指定参数为 $S_0=100,Y_0=0,\mu=0.05,\kappa=2,\theta=-0.2,\xi=0.6,\rho=-0.7,T=1$。它们是本题的可复现基准，不需要另做市场数据拟合。
+
+\subsection*{两个噪声为什么有关联？}
+由独立标准正态 $Z_1,Z_2$ 生成
+\[
+\Delta W^{(1)}=\sqrt h Z_1,\qquad
+\Delta W^{(2)}=\sqrt h(\rho Z_1+\sqrt{1-\rho^2}Z_2).
+\]
+直接计算可得，两者方差都是 $h$，协方差为 $\rho h$，所以相关系数为 $\rho$。这只是概率论里的线性组合，不要求理解尖括号记号 $d\langle W^{(1)},W^{(2)}\rangle=\rho dt$ 的完整定义。负相关表示同一步两个驱动倾向于反向变化，不是说两个状态始终反向运动。
+
+\subsection*{实现的一个关键细节}
+两条 EM 更新的系数都必须使用旧值 $Y_n$：
+\begin{align}
+X_{n+1}&=X_n+(\mu-\tfrac12g(Y_n)^2)h+g(Y_n)\Delta W_n^{(1)},\\
+Y_{n+1}&=Y_n+\kappa(\theta-Y_n)h+\xi\sqrt{1+Y_n^2}\Delta W_n^{(2)}.
+\end{align}
+像显式耦合 PDE 系统一样，应先算两个新值，再统一赋值。先改写 $Y$ 再用于 $X$，就改变了算法。两维噪声的 Milstein 也不能直接照抄 GBM 的标量修正；本题在这里使用 EM 即可。
+
+\newpage
+\section{没有精确终值，怎样验证？}
+这一步最接近你在数值 PDE 中做的网格加密实验。现有报告使用粗网格 $N=8,16,32,64,128,256$，参考网格 $N_r=2048,4096,8192$。所有网格由 8192 步的同一对细增量聚合得到。
+
+先计算 $\E|S_T^h-S_T^r|$ 的样本估计和区间。但名称应是“相对于数值参考的强差”，不能直接叫作已知的精确误差。若 $S_T^\star$ 是未知精确终值，反三角不等式给出
+\[
+\left|\E|S_T^h-S_T^\star|-\E|S_T^h-S_T^r|\right|
+\leq\E|S_T^r-S_T^\star|.
+\]
+右端未知，所以需要更细的参考检查答案是否改变。已有结果中，同一个 $N=8,16,32,64$ 拟合窗口，在三种参考下的斜率分别为 0.496、0.493、0.491，支持该窗口内半阶趋势对参考选择较稳定的判断。
+
+参考 2048 与 4096 步之间的平均绝对差为 0.05679，4096 与 8192 步之间为 0.04016，后者约为前者的 0.707 倍。这与半阶缩放相容。它仍不是精确误差的认证上界，也没有题目规定的“低于 10\% 即通过”的通用阈值。
+
+\subsection*{为什么非仿射模型的均值反而太容易通过？}
+在一步开始时，$S_n$ 与 $g_n=g(Y_n)$ 已知，下一步增量仍服从 $N(0,h)$。因此
+\begin{align*}
+\E[S_{n+1}\mid\text{当前信息}]
+&=S_ne^{(\mu-g_n^2/2)h}\E[e^{g_n\Delta W_n^{(1)}}\mid\text{当前信息}]\\
+&=S_ne^{(\mu-g_n^2/2)h}e^{g_n^2h/2}=S_ne^{\mu h}.
+\end{align*}
+反复取期望得到 $\E S_N=S_0e^{\mu T}$，与连续模型相同（这里有界的 $g$ 保证所需的可积性）。这个等式对所有步长成立，不受两个驱动在同一步的相关性影响，因为使用的是已知的旧系数。
+
+所以均值很适合检查实现，但其离散偏差恒为零，无法用于测量此方案的非零弱阶。看涨收益没有这种自动保持性质，因而能暴露分布差异。不过它在 $S=100$ 处不光滑，不能直接、不加说明地套用光滑观测函数的弱阶结论。
+
+\newpage
+\section{与数值 PDE 的直接联系：期望满足一个 PDE}\label{sec:pde}
+这一节帮助你把新任务放回熟悉的知识体系，\textbf{不是额外要求实现 PDE 求解器}。本题的未知 $S_t$ 是有限维随机过程；它本身不是一个带空间变量的随机 PDE。
+
+定义
+\[
+u(t,s)=\E[\varphi(S_T)\mid S_t=s].
+\]
+它表示“从时刻 $t$、状态 $s$ 出发，到终点的平均观测值”。对于 $dS=a(S)dt+b(S)dW$，在能合法进行以下展开的光滑条件下，利用一步条件期望与 Taylor 展开：
+\begin{align*}
+u(t,s)&=\E[u(t+h,S_{t+h})\mid S_t=s],\\
+0&\approx h u_t+h a(s)u_s+\tfrac12h b(s)^2u_{ss}.
+\end{align*}
+这里用到了 $\E\Delta S\approx a(s)h$、$\E(\Delta S)^2\approx b(s)^2h$。除以 $h$，得到后向方程
+\begin{equation}\label{eq:backward}
+u_t+a(s)u_s+\tfrac12b(s)^2u_{ss}=0,
+\qquad u(T,s)=\varphi(s).
+\end{equation}
+对 GBM，它是
+\[
+u_t+\mu s u_s+\tfrac12\sigma^2s^2u_{ss}=0.
+\]
+这是带终值条件的抛物型方程；令 $\tau=T-t$，便转成从 $\tau=0$ 开始的演化问题。系数在 $s>0$ 上给出扩散项，在 $s=0$ 处退化。若实际做 PDE 计算，还需处理无界状态域的截断及边界条件，本题没有要求完成这些额外工作。
+
+\textbf{同一目标的两条数值路线。}有限差分或有限元在状态空间上近似 $u$；蒙特卡洛路线模拟很多轨道，再平均 $\varphi(S_T)$。两者都在求 $u(0,S_0)$。这里采用后者，所以误差预算除了时间离散，还多了一项 $M^{-1/2}$ 规模的抽样不确定性。
+
+取 $\varphi(s)=s$ 时，$u(t,s)=s e^{\mu(T-t)}$ 满足上述方程：$u_{ss}=0$，扩散项消失。这从 PDE 角度解释了 GBM 均值为什么不依赖 $\sigma$，也提醒我们：只测均值可能看不到扩散部分的误差。非光滑收益的终值条件需要更谨慎地理解，以上光滑展开不是其边界处的完整正则性证明。
+
+\newpage
+\section{对照已有数据：每个结论究竟说明了什么？}\label{sec:readresults}
+\textbf{结论一：Milstein 的路径精度更高。}GBM 的强斜率为 EM 0.500、Milstein 0.991。步数从 64 增至 1024，步长缩小 16 倍；EM 误差从 0.66641 降至 0.16658，约缩小 4 倍；Milstein 从 0.02391 降至 0.00153，约缩小 15.6 倍。这正是半阶与一阶最直观的区别。它是固定网格下的精度比较，不等于相同计算成本下的速度排名。
+
+\textbf{结论二：两种 GBM 方法的均值偏差相同。}两种乘子的条件均值都是 $1+\mu h$，所以
+\[
+\E S_N^E=\E S_N^M=S_0(1+\mu h)^{T/h}.
+\]
+用 $\log(1+\mu h)=\mu h-\mu^2h^2/2+O(h^3)$ 展开：
+\[
+\E S_N-S_0e^{\mu T}
+=-\tfrac12 S_0e^{\mu T}\mu^2T h+O(h^2).
+\]
+这在当前 $\mu\ne0$ 参数下解释了一阶均值偏差。控制后测得斜率约为 0.999 与 1.000。若 $\mu=0$，这一均值测试会退化为零偏差；所以观测量和参数的选择都重要。
+
+\textbf{结论三：非仿射细网格弱差尚未分辨。}在 $N=8,16,32$，收益差区间不跨零；在 $N=64,128,256$，区间跨零。不能为了得到一条漂亮直线就强行拟合整个区间的弱阶。即使某些区间不跨零，也仍需检查网格范围和参考敏感性，不能只凭“显著”就断定进入了渐近区。
+
+\input{sample_size_table.tex}
+这一个样本量实验固定两层网格，只改变用于平均的路径数。路径数从 1 万变成 4 万，标准误差从 0.005149 降至 0.002592，约减半；变成 10 万后为 0.001633。但三组区间仍跨零。
+
+\textbf{应怎样解释？}增加样本确实提高了精度，但不保证这些规模足以辨认当前偏差。三组使用保存顺序的嵌套子集，彼此相关。由于 $h$ 和参考都没变，点估计下降不是时间离散偏差下降；10 万条路径的估计也不是真值。
+
+\newpage
+\section{怎样把公式落实到现有代码？}\label{sec:code}
+随附 \texttt{teaching\_core.py} 是短小的教学实现，便于逐行阅读。它使用形状 $(M,N)$ 的数组：行是路径，列是时间。原项目 \texttt{nonaffine.py} 则采用时间在前的布局，不能不改轴号就复制其 \texttt{reshape} 操作。
+
+\subsection*{GBM：一个细网格服务所有粗网格}
+概念上的调用流程为：
+\begin{lstlisting}
+rng = np.random.default_rng(seed)
+fine = rng.normal(0., np.sqrt(T/n_fine), (M, n_fine))
+for n in grid_sizes:
+    dw = coarsen(fine, n)
+    exact, em, mil = gbm_terminal(dw, T=T)
+    strong_em = estimate(np.abs(em-exact))
+    weak_mean_em = estimate(em-exact)
+\end{lstlisting}
+这里故意区分强差与均值弱差；如果调用针对看涨收益的函数，就改变了 GBM 本部分的测试目标。精确终值只需要同一行的增量总和。EM 和 Milstein 的终值可以写成乘子连乘，原项目的向量化实现与逐步更新相同。
+
+\subsection*{非仿射：两个驱动都要聚合}
+生成两组独立标准正态数，转换为相关细增量。对每个网格，分别聚合两个驱动，再调用 \texttt{nonaffine\_\allowbreak terminal}。先保存所有网格的终值，随后用相同路径序号的粗终值与参考终值计算差。
+
+\begin{table}[H]\centering\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}\toprule
+原项目中的位置 & 先阅读什么\\\midrule
+\texttt{gbm.py: simulate\_batch} & 细增量聚合、精确终值、两种乘子；控制变量可稍后读。\\
+\texttt{gbm.py: fit\_controls} & 独立预实验如何拟合控制系数。\\
+\texttt{nonaffine.py: em\_terminal} & 如何聚合两个驱动。\\
+\texttt{nonaffine.py: \_em\_kernel} & 为什么保存旧 $Y$，如何更新 $X,Y$。\\
+\texttt{verify.py} & 公式、耦合和已有结果的一致性检查。\\
+\texttt{undergraduate\_revision/} & 当前报告、样本量脚本及完整结果。\\\bottomrule
+\end{tabularx}
+\end{table}
+正式程序分批处理路径以节省内存。分批是计算组织方式，不应改变理论算法。复现需记录随机种子、批大小、路径数、网格和软件环境，不能只保存最后一张图。
+
+\newpage
+\section{作为本科大作业，应怎样组织工作和报告？}
+\begin{enumerate}
+\item \textbf{先写目标和指标。}说明 GBM 用来验证方法，非仿射模型用来检验无精确解时的验证策略；明确定义终值强误差与观测量弱误差。
+\item \textbf{先核对更新，再跑大样本。}检查 $\sqrt h$、Milstein 的 $-h$ 项、噪声相关系数以及旧状态同步更新。精确 GBM 终值在各层粗化后应一致。
+\item \textbf{设计耦合网格。}确定一组嵌套网格及统一最细驱动。固定参数和种子，避免运行后只挑选支持预期结论的数据。
+\item \textbf{完成 GBM 三类证据。}强误差与斜率、均值偏差与区间、直方图与分位数。样本均值和理论均值接近只是其中一项检查。
+\item \textbf{完成选定的非仿射扩展。}重复参考加密，报告经验强趋势，保留弱差的符号和区间。明确参考也有偏差。
+\item \textbf{解释局限。}说明未分辨的弱差、拟合窗口以及负值诊断的范围。不要把数据支持不到的结论写成定理。
+\end{enumerate}
+
+\subsection*{报告正文的三个中心问题}
+可以直接沿用当前本科版：同一条路径谁更准确？路径更准确是否意味着均值更准确？没有精确解时怎样判断结果可信？每个问题依次给出定义、方法、证据和解释。这样公式与图表都服务于具体问题，读者不会只看到一串技术名词。
+
+\subsection*{哪些知识要会，哪些可以暂缓？}
+需要会解释布朗增量的方差、It\^o 修正的来源、三个 GBM 更新、条件期望、强弱差别、配对和置信区间。需要知道强阶结论有适用条件，但不必把完整 SDE 存在唯一性证明、一般 Milstein 理论或多维迭代随机积分加入本科报告。后向 PDE 是帮助理解期望的桥梁，也无需另写一套 PDE 实验。
+
+\subsection*{最后用五个问题检查自己是否理解}
+\begin{enumerate}
+\item 把 $\sqrt h Z$ 写成 $hZ$，为什么加密后模型会变？
+\item 两种方法的均值都正确，能否说明路径和分布都正确？
+\item 强误差实验中独立生成粗细路径，为什么不公平？
+\item 区间跨零，为什么既不能说“误差为零”，也不能强报弱阶？
+\item 把路径数增加十倍与把时间步数增加十倍，分别改变什么？
+\end{enumerate}
+答案依次对应第 3、6、8、7 和 7 节。能用自己的话回答这些问题，比记住某个拟合斜率的三位小数更能体现对这次作业的理解。
+
+\newpage
+\appendix
+\section{可运行的核心教学代码}
+下面的代码没有完整报告生成、控制变量拟合和正式实验的批处理，目的是把数学公式对应到实现。文件末尾的检查只使用少量固定增量，检验计算逻辑，不产生新的收敛实验数据，也不覆盖已有结果。
+
+\lstinputlisting[firstline=6,lastline=60,basicstyle=\ttfamily\scriptsize]{teaching_core.py}
+
+\newpage
+\section{使用方式与材料来源}
+在本目录中运行
+\begin{lstlisting}[language=bash]
+python3 teaching_core.py
+tectonic --keep-logs 任务理解与教学指南.tex
+\end{lstlisting}
+第一个命令执行少量固定输入的实现检查；第二个编译本指南。Python 依赖 NumPy，中文排版依赖 Noto CJK 字体与 Tectonic。主报告、原始正式实验和教学代码的角色不同：主报告给结论，原程序产生正式证据，教学代码解释核心操作。
+
+\subsection*{如何与主报告配合阅读}
+先读本指南的误差与耦合部分，再读本科版报告第 4--6 节。遇到一个斜率时，确认它是强误差还是弱误差、对什么参考计算、在哪个网格窗口拟合。遇到一个区间时，确认它针对什么随机变量的均值，以及是否含有参考离散偏差。
+
+已完成的样本量实验位于本科版报告第 11 页；本指南仅解释它，没有另外增加模型、网格、随机种子或实验。理论阐释中的三点离散分布例子属于数学例子，不是额外的数值实验。
+
+\subsection*{材料来源与说明}
+任务要求依据项目内 \texttt{source/problem\_pack.pdf} 第 1、6--7 页。数据依据当前 \texttt{undergraduate\_\allowbreak revision/} 中的本科版报告及 \texttt{results/}，实现对应原项目 \texttt{gbm.py}、\texttt{nonaffine.py} 和 \texttt{verify.py}。本文的 It\^o 与后向 PDE 推导是面向初学者的解释，已区分直观展开和需要额外假设的完整证明。
+
+本文由 OpenAI Codex 辅助编写、核对代码和排版，作为课程作业的配套学习材料。它不对具体评分结果作保证，也不替代课程正式说明。
+\end{document}

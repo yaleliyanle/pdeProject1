@@ -1,0 +1,11 @@
+{
+  "pages": 18,
+  "typesetting_issues": [],
+  "visual_review": "All 18 pages; enlarged review of the code appendix",
+  "core_code_checks": "PASS: fixed increments only; not a statistical convergence test",
+  "sample_size_table": "Matches existing saved study to printed precision",
+  "new_experiments": 0,
+  "pdf_sha256": "f0e77be1cfc2ddfa45db073d749cbf6ee4ac2837f4620a17f193ba8409f69dbf",
+  "source_report_commit": "282688a",
+  "build_note": "Chinese Noto CJK fonts must be installed to recompile"
+}

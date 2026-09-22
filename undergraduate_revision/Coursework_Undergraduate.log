@@ -483,7 +483,7 @@ File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 
 ] [2]
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-05.
+07.
  (t1lmtt.fd
 File: t1lmtt.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
@@ -499,25 +499,26 @@ File: figures/report_gbm_strong.pdf Graphic file (type pdf)
 File: figures/report_gbm_weak.pdf Graphic file (type pdf)
 <use figures/report_gbm_weak.pdf>
 
-(results/gbm_weak_table.tex) [6]
+(results/gbm_weak_table.tex) (results/control_se_table.tex) [6]
 File: figures/gbm_distribution.pdf Graphic file (type pdf)
 <use figures/gbm_distribution.pdf>
- (results/gbm_quantile_table.tex) [7]
+
+(results/gbm_quantile_table.tex) [7]
 File: figures/report_nonaffine_strong.pdf Graphic file (type pdf)
 <use figures/report_nonaffine_strong.pdf>
-
-(results/nonaffine_strong_table.tex) [8]
+ (results/nonaffine_strong_table.tex)
+[8]
 File: figures/report_nonaffine_weak.pdf Graphic file (type pdf)
 <use figures/report_nonaffine_weak.pdf>
- (results/nonaffine_weak_table.tex)
-[9] (results/nonaffine_reference_table.tex)
-(results/nonaffine_diagnostics_table.tex) [10] [11]
+ (results/nonaffine_weak_table.tex) [9]
+(results/nonaffine_reference_table.tex) (results/reference_slopes_table.tex)
+(results/nonaffine_diagnostics_table.tex) [10] (results/sample_size_table.tex)
+[11] [12]
 Package hyperref Info: bookmark level for unknown lstlisting defaults to 0 on i
-nput line 288.
- [12]
-(Coursework_Undergraduate.aux)
+nput line 308.
+ [13] (Coursework_Undergraduate.aux)
 Package rerunfilecheck Info: File `Coursework_Undergraduate.out' has not change
 d.
-(rerunfilecheck)             Checksum: 38581A83E784E45FAA42DB12FA969D9D;1605.
+(rerunfilecheck)             Checksum: 9F81C064613F0E3958985052CE009ABD;2051.
  )
-Output written on Coursework_Undergraduate.xdv (12 pages, 73108 bytes).
+Output written on Coursework_Undergraduate.xdv (13 pages, 79008 bytes).

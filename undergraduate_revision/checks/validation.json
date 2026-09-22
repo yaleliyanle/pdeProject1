@@ -1,13 +1,41 @@
 {
-  "pages": 12,
-  "typesetting_issues": [],
-  "visual_review_pages": [
-    7,
-    9,
-    10,
-    11
-  ],
-  "negative_frequency_rows_checked": 16,
+  "date": "2026-09-23",
+  "documents": {
+    "Coursework_Undergraduate.pdf": {
+      "pages": 13,
+      "typesetting_issues": [],
+      "sha256": "93b8f149b1a7876b012455f6940f709b412fd8827e0732798bdd3675fe9ab14a",
+      "visual_review_pages": [
+        5,
+        6,
+        10,
+        11
+      ],
+      "nonblocking_build_notes": [
+        "inputenc ignored by the Unicode TeX engine"
+      ]
+    },
+    "Coursework_Undergraduate_中文.pdf": {
+      "pages": 13,
+      "typesetting_issues": [],
+      "sha256": "8900faa8c29df68f4676c18967b9e3967f10542ce1a31362fec673bed3593a60",
+      "visual_review_pages": [
+        6,
+        7,
+        9,
+        10,
+        11,
+        13
+      ],
+      "nonblocking_build_notes": [
+        "Chinese font paths are local; italic/slanted CJK fall back to upright"
+      ]
+    }
+  },
   "large_simulations_rerun": false,
-  "policy_check": "Supplied problem pack contains no AI policy. Revision follows user confirmation that AI is allowed."
+  "additional_experiments": 1,
+  "new_paths_generated": 0,
+  "sample_size_full_sample_crosscheck": "PASS",
+  "negative_frequency_rows_checked": 16,
+  "policy_check": "Supplied problem pack contains no AI policy. Acknowledgement follows user confirmation that AI is allowed."
 }

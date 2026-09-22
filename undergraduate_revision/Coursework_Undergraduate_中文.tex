@@ -8,6 +8,8 @@
 \usepackage{graphicx,booktabs,float,caption,xcolor,listings}
 \usepackage[hidelinks]{hyperref}
 \usepackage{microtype}
+\setlength{\emergencystretch}{2em}
+\linespread{1.12}
 \captionsetup{font=small}
 \setcounter{tocdepth}{1}
 \lstset{language=Python,basicstyle=\ttfamily\scriptsize,keywordstyle=\color{blue!70!black},
@@ -22,7 +24,7 @@ breaklines=true,frame=single,rulecolor=\color{black!40},tabsize=4}
 \begin{document}
 \maketitle
 \begin{abstract}
-本文比较几何布朗运动（GBM）的精确模拟、Euler--Maruyama（EM）方法和 Milstein 方法，并研究一个需要数值参考解的非仿射随机波动率模型。所有离散方法都通过聚合布朗增量使用共同随机路径。对于 GBM，终值强收敛的测量阶数为 \GBMEMRate{}（EM）和 \GBMMilRate{}（Milstein），与理论上的 $1/2$ 阶和 $1$ 阶一致。我们使用配对差、独立拟合的控制变量和解析的离散均值公式，将弱均值偏差与蒙特卡洛抽样不确定性分开；终值分布则与精确的对数正态分布比较。对于非仿射模型，我们对数价格和波动率因子都使用 EM，因此模拟价格保持为正。给定拟合窗口上的经验强阶为 \NARate{}。我们用置信区间和三层嵌套参考网格报告收益偏差；当偏差无法由抽样误差中分辨出来时，不强行指定弱收敛阶。实验说明：精确基准可以验证方法，而数值网格之间的一致只能通过参考网格加密来评估。
+本文围绕三个问题展开：哪种方法能更准确地逼近同一条随机路径；路径更准确是否意味着均值也更准确；没有精确解时如何评估结果。几何布朗运动（GBM）为 Euler--Maruyama（EM）和 Milstein 方法提供精确基准，两者测得的终值强阶分别为 \GBMEMRate{} 和 \GBMMilRate{}，但均值却具有相同的一阶偏差。对于需要数值参考的非仿射随机波动率模型，三层嵌套参考给出的经验强斜率都接近半阶；较细网格上的看涨收益差则还无法从抽样噪声中可靠分辨。最后，用已有配对终值完成一个样本量实验，说明增加路径数如何减少抽样不确定性，以及为什么它不能消除时间离散偏差。
 \end{abstract}
 \tableofcontents
 \vfill
@@ -30,7 +32,9 @@ breaklines=true,frame=single,rulecolor=\color{black!40},tabsize=4}
 
 \newpage
 \section{引言与理论背景}
-题目给出的 SDE 方向要求研究强收敛、弱收敛、抽样不确定性以及嵌套网格验证；这些内容取代了确定性 ODE 中的稳定域和自适应步长分析~\cite{pack}。GBM 有精确的路径基准，而题目规定的非仿射模型必须把时间离散作为模型求解的一部分。本文的目标是说明实验真正验证了什么，而不是根据看起来合理的样本路径猜测精度。
+题目要求用强弱收敛、抽样不确定性和嵌套网格评估 SDE 方法~\cite{pack}。GBM 的精确解便于检查程序和方法；非仿射模型则说明，没有精确采样公式时，这套验证思路需要怎样调整。
+
+结果部分依次回答三个问题：哪种方法能更准确地逼近同一条随机路径（第~\ref{sec:question-path}~节）；路径更准确是否意味着均值也更准确（第~\ref{sec:question-mean}~节）；没有精确解时如何评估结果（第~\ref{sec:question-reference}~节）。始终区分两个数量：增加时间步数 $N$ 改善时间分辨率，增加路径数 $M$ 改善统计估计精度。
 
 \subsection{GBM 及其精确转移}
 当 $S_0>0$ 时，It\^o 随机微分方程和对数变换为
@@ -90,14 +94,14 @@ D_i(h)=\varphi(S_{T,i}^{(h)})-\varphi(S_{T,i}^{\rm ref}),\qquad
 \end{equation}
 弱误差是 $|\mathbb E[D]|$，不是 $\mathbb E|D|$。即使区间跨过零，也保留这个带符号的结果。这些区间只量化抽样误差，不包括数值参考本身的时间离散偏差。
 
-\subsection{解析 GBM 的弱均值偏差}
+\subsection{GBM 均值弱偏差的解析表达式}
 对于两种方法，条件期望下的乘子都是 $1+\mu h$。因此
 \begin{align}
 \mathbb E[S_N^{E}]=\mathbb E[S_N^{M}]&=S_0(1+\mu h)^{T/h},\\
 b_{\rm exact}(h)&=S_0(1+\mu h)^{T/h}-S_0e^{\mu T},\label{eq:weak}\\
 b_{\rm exact}(h)&=-\tfrac12 S_0e^{\mu T}\mu^2T\,h+O(h^2).
 \end{align}
-这说明当前非退化参数下，均值偏差为一阶。这是验证目标，不是把解析答案替换成蒙特卡洛估计。
+这说明当前非退化参数下，均值偏差为一阶。这个解析表达式用于核对模拟结果，本身不是蒙特卡洛估计。
 
 模拟还构造了均值为零的控制变量 $C_i$，并估计 $\overline{D-\beta^\top C}$。系数 $\beta$ 在独立的预实验样本上拟合，然后固定用于正式样本，因此正式估计仍保持无偏；预实验不计入报告的正式路径数。完整控制变量公式和实现保留在随附的 \texttt{gbm.py} 中。
 
@@ -138,34 +142,36 @@ S_{n+1}&=\exp(X_{n+1}).
 所有计算使用双精度和固定的 NumPy 随机数生成器；正式路径分批处理，以限制内存。随机种子、批大小、软件版本、耗时和完整精度结果都保存在 JSON 文件中。实验不使用外部市场数据。GBM 在价格变量上比较精确解、EM 与 Milstein；非仿射模型使用逐渐加密的 EM 参考。收益函数为 $\varphi(S)=(S-100)^+$，即在题目给定漂移下的\emph{未贴现期望看涨收益}。没有定价测度和贴现率，因此不将它解释为风险中性期权价格。
 
 \newpage
-\section{GBM 数值结果}
-\subsection{强收敛}
+\section{哪种方法能更准确地逼近同一条随机路径？}\label{sec:question-path}
+\subsection{GBM 的强收敛}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_gbm_strong.pdf}
+\includegraphics[width=.92\textwidth]{figures/report_gbm_strong_中文.pdf}
 \caption{耦合 GBM 的终值 $L^1$ 误差。误差棒是逐点 95\% 蒙特卡洛区间，许多区间小于标记。参考线表示 $1/2$ 阶和 $1$ 阶。}
 \end{figure}
 \input{results/gbm_strong_table_中文.tex}
-在窗口 $\GBMFitWindow{}$ 上，EM 和 Milstein 的拟合斜率分别为 \GBMEMRate{} 和 \GBMMilRate{}。这与理论区别一致：EM 没有包含二次随机增量，而 Milstein 加入了该项。在最细步长下，Milstein 的路径误差明显更小。由于两种方法使用完全相同的布朗路径，差异来自更新公式，而非不同随机实现。
+在窗口 \GBMFitWindow{} 上，EM 和 Milstein 的拟合斜率分别为 \GBMEMRate{} 和 \GBMMilRate{}。这与理论区别一致：EM 没有包含二次随机增量，而 Milstein 加入了该项。在最细步长下，Milstein 的路径误差明显更小。由于两种方法使用完全相同的布朗路径，差异来自更新公式，而非不同随机实现。
 
-精确解在模拟网格点上没有时间离散误差。重新排列求和可能造成极小的浮点差异，但那不是收敛阶。这里比较的是终值误差，而不是整条路径上的最大误差；后者是另一种诊断。
+半阶的含义是步长减半时，误差约乘以 $1/\sqrt2$；一阶则表示误差约减半。从 $N=64$ 到 $1024$，步长缩小 16 倍，EM 的误差从 0.66641 降至 0.16658，约缩小 4.00 倍，与 $\sqrt{16}$ 一致。Milstein 从 0.02391 降至 0.00153，约缩小 15.6 倍，接近 16 倍。这里的误差以价格为单位，比较的是终值，而不是整条路径的最大误差。精确网格值没有时间离散误差。
 
 \newpage
-\subsection{弱收敛与方差缩减}\label{sec:gbmweak}
+\section{路径更准确，均值也一定更准确吗？}\label{sec:question-mean}
+\subsection{GBM 的弱收敛}\label{sec:gbmweak}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_gbm_weak.pdf}
-\caption{GBM 均值偏差的大小。图中将控制变量后的配对估计与解析离散均值偏差比较；原始估计和区间保留在数值表中。}
+\includegraphics[width=.82\textwidth]{figures/report_gbm_weak_中文.pdf}
+\caption{GBM 均值偏差的大小。图中将控制变量后的配对估计与解析离散均值偏差比较；原始估计和区间保留在保存的 CSV 数据中。}
 \end{figure}
 \input{results/gbm_weak_table_中文.tex}
-虽然两种方法的强误差不同，但它们的解析均值偏差相同。解析偏差的拟合阶数为 \GBMAnalyticWeakRate{}；在给定数据上，控制后的蒙特卡洛斜率为 \GBMEMWeakRate{} 和 \GBMMilWeakRate{}。这些结果要结合区间解读，不能代替式~\eqref{eq:weak}。在很小的 $h$ 下，未经控制的 EM 配对估计噪声太大，难以可靠分辨这个小偏差。
+对于均值，答案是否定的：虽然两种方法的强误差不同，它们的解析均值偏差却相同。每一步的期望乘子都是 $1+\mu h$，因此式~\eqref{eq:weak} 同时适用于两者。解析偏差的拟合阶数为 \GBMAnalyticWeakRate{}，控制后的蒙特卡洛斜率分别为 \GBMEMWeakRate{} 和 \GBMMilWeakRate{}。这一结论针对均值这个观测量，并不表示两种方法对所有收益函数都有相同偏差。
 
 控制变量的作用是减少抽样噪声而不改变估计目标。如果 $C$ 的均值已知为零，那么对固定 $\beta$ 有 $\mathbb E[D-\beta C]=\mathbb E[D]$；选择与 $D$ 相关的 $C$ 可以显著降低样本平均的方差。实现使用五个由同一批布朗增量计算的控制变量，在独立的 20,000 条预实验路径上拟合系数，再固定到 160,000 条正式路径上。它们是降噪工具，不是新的收敛方法。
 
-在 $N=1024$ 的 EM 实验中，原始配对标准误约为 $5.46\times10^{-4}$，大于解析偏差的绝对值 $1.28\times10^{-4}$；控制后标准误降为 $8.41\times10^{-8}$。这解释了为什么使用方差缩减。Milstein 在该网格上的原始配对区间已经不跨零。解析偏差只用于核对模拟结果，没有代替模拟估计。
+\input{results/control_se_table_中文.tex}
+表~\ref{tab:control-se} 解释了方差缩减的作用：EM 原始标准误差大于均值偏差的绝对值 $1.28\times10^{-4}$，而 Milstein 的原始区间已经不跨零。控制变量减少的是估计噪声，不改变时间更新方法及其偏差；解析偏差只作为核对目标。
 
 \newpage
 \subsection{分布与正值性}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/gbm_distribution.pdf}
+\includegraphics[width=.92\textwidth]{figures/gbm_distribution_中文.pdf}
 \caption{GBM 终值分布与精确对数正态定律的比较。直方图用于检查抽样形状，分位数提供更精细的分布比较。}
 \end{figure}
 \input{results/gbm_quantile_table_中文.tex}
@@ -194,33 +200,33 @@ $N$ & EM：$S_N<0$ & Milstein：$S_N<0$\\\midrule
 保存的计数实际统计的是 $S_N\le0$，全部为零，因此严格负值的频率也为零。这是\emph{终值}频率，不是“路径中途曾经为负”的频率；本诊断没有保存 GBM 的所有中间价格。观察到零次负值不能证明 EM 保持正值。负价格可能影响非线性收益估计；将负值截成零也会改变算法。本文没有进行截断。
 
 \newpage
-\section{非仿真模型的数值结果}
+\section{没有精确解时，怎样判断结果是否可信？}\label{sec:question-reference}
 \subsection{相对于数值参考的强差}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_nonaffine_strong.pdf}
+\includegraphics[width=.92\textwidth]{figures/report_nonaffine_strong_中文.pdf}
 \caption{相对于三层耦合 EM 参考网格的终值强差。参考是数值解，因此曲线不是相对于精确解的误差。}
 \end{figure}
 \input{results/nonaffine_strong_table_中文.tex}
-相对于最细参考，在 $\NAFitWindow{}$ 上的经验斜率为 \NARate{}。它与该窗口内大约半阶的强收敛行为一致。当粗网格接近参考网格时，曲线会弯曲：两个相近的离散解可能彼此很接近，但仍共同偏离连续时间 SDE 的解。
+相对于最细参考，在 \NAFitWindow{} 上的经验斜率为 \NARate{}。它与该窗口内大约半阶的强收敛行为一致。当粗网格接近参考网格时，曲线会弯曲：两个相近的离散解可能彼此很接近，但仍共同偏离连续时间 SDE 的解。
 
 若 $S^\star$ 表示未知的精确终值，则反三角不等式给出
 \begin{equation}
 \left|\mathbb E|S_h-S^\star|-\mathbb E|S_h-S_r|\right|
 \leq \mathbb E|S_r-S^\star|.
 \end{equation}
-右端未知。把 $r$ 换成更细网格，测到的是参考敏感性，而不是未知的精确误差。因此下文单独报告参考网格的变化，不把包含最细粗网格的斜率称为精确验证。
+右端未知。把 $r$ 换成更细网格，测到的是参考敏感性，而不是未知的精确误差。因此，除了比较相邻参考解的差，本文还比较不同参考下拟合斜率的变化。
 
 \newpage
 \subsection{弱收益差}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_nonaffine_weak.pdf}
+\includegraphics[width=.92\textwidth]{figures/report_nonaffine_weak_中文.pdf}
 \caption{相对于最细 EM 参考的看涨收益带符号配对差。误差棒为 95\% 抽样区间；零线帮助判断偏差符号是否可分辨。}
 \end{figure}
 \input{results/nonaffine_weak_table_中文.tex}
 \NAWeakInterpretation{}
 收益函数在行权价处有一个折角，因此不能不加说明地套用光滑测试函数的弱阶理论。配对区间用于判断估计差异能否从抽样噪声中分辨；它们不包括数值参考的偏差。
 
-\subsection{为什么 call payoff 比均值更有信息？}
+\subsection{为什么使用看涨收益，而不只检查均值？}
 连续模型满足 $\mathbb E[S_T]=100e^{0.05}$。但是，对数 EM 在每一个步长下也保留这个均值。令 $g_n=g(Y_n)$，在一步开始时 $S_n$ 和 $g_n$ 已知，而下一增量服从 $N(0,h)$，所以
 \begin{equation}\label{eq:mean-preservation}
 \begin{aligned}
@@ -229,14 +235,16 @@ $N$ & EM：$S_N<0$ & Milstein：$S_N<0$\\\midrule
 &=S_n e^{(\mu-g_n^2/2)h}e^{g_n^2h/2}=S_ne^{\mu h}.
 \end{aligned}
 \end{equation}
-重复这个条件期望计算便得到 $\mathbb E[S_N]=100e^{0.05}$。因此均值是有用的实现检查，但它对该方案没有时间离散偏差，无法显示弱收敛阶。
+这里 $\mathcal F_{t_n}$ 表示一步开始时已经掌握的信息。重复这个条件期望计算便得到 $\mathbb E[S_N]=100e^{0.05}$。因此均值是有用的实现检查，但它对该方案没有时间离散偏差，无法显示弱收敛阶。
 
-均值相同不代表期望收益相同。例如，价格总是 100，和以相同概率取 80 或 120 的价格，都有均值 100；但执行价为 100 的收益 $(S-100)^+$ 的期望分别为 0 和 10。Call payoff 能观察均值看不到的终值分布差异。它的期望没有被 log-EM 自动保持，因此改变步长可能产生真正的弱偏差。这就是它在本实验中作为非平凡弱观测量的原因；它不是唯一选择，也不保证每个网格都能测出显著偏差。
+均值相同不代表期望收益相同。例如，价格总是 100，和以相同概率取 80 或 120 的价格，都有均值 100；但执行价为 100 的收益 $(S-100)^+$ 的期望分别为 0 和 10。看涨收益能观察均值看不到的终值分布差异。它的期望没有被对数 EM 自动保持，因此改变步长可能产生真正的弱偏差。这就是它在本实验中作为非平凡弱观测量的原因；它不是唯一选择，也不保证每个网格都能测出显著偏差。
 
 \newpage
-\section{参考网格加密与验证}
+\subsection{加密参考网格后，答案变化多大？}
 \input{results/nonaffine_reference_table_中文.tex}
 \NAReferenceInterpretation{}
+\input{results/reference_slopes_table_中文.tex}
+表~\ref{tab:reference-slopes} 固定拟合窗口，只改变参考网格。三个斜率约为 0.496、0.493 和 0.491，说明这个窗口内的半阶趋势对这些参考选择较稳定。这是数值证据，不是精确误差上界。
 \begin{table}[H]\centering
 \caption{最细非仿射网格上的布朗增量与状态诊断。}
 \input{results/nonaffine_diagnostics_table_中文.tex}
@@ -248,17 +256,31 @@ $N$ & EM：$S_N<0$ & Milstein：$S_N<0$\\\midrule
 按照题目要求，本模型使用 EM。两维噪声下的 Milstein 方法还需要额外的交叉噪声项，不能直接把 GBM 的标量公式复制过来；本次比较不需要实现这个扩展。
 
 \newpage
+\subsection{一个样本量实验：增加路径数能改善什么？}\label{sec:sample-size}
+固定粗网格 $N=64$ 和参考网格 $N_{\rm ref}=8192$，从已保存的终值数组计算配对收益差：
+\begin{equation}\label{eq:sample-size-difference}
+D_i=(S_{T,i}^{(1/64)}-100)^+-(S_{T,i}^{(1/8192)}-100)^+.
+\end{equation}
+依保存顺序分别取前 10,000、40,000 和 100,000 对样本。这三个子集相互嵌套，共享观测，因此三组估计彼此相关，不是三次独立重复实验。没有重新模拟路径，也没有更换种子挑选结果。
+\input{results/sample_size_table_中文.tex}
+每个子集内部的不同路径独立，均值的标准误差为 $s_D/\sqrt M$。如果样本方差变化不大，路径数增加四倍，标准误差应约减半。表~\ref{tab:sample-size} 中，它从 10,000 条路径时的 0.005149 降到 40,000 条时的 0.002592，比值为 0.503；在 100,000 条时为 0.001633，约为最初的 0.317，与 $1/\sqrt{10}$ 接近。因此，观测到的抽样不确定性按预期的规模下降。
+
+三个区间仍然都包含零。增加路径数提高了精度，却不保证现有样本规模足以辨认这个偏差。点估计逐渐变小，也不能说明方法本身的偏差变小了：两层时间网格一直不变，三组估计针对的是同一个未知期望差。100,000 条路径的估计也不是其精确值。
+
+\textbf{实际意义。}增加 $M$ 减少抽样不确定性；增加 $N$ 改变时间离散。本实验只检验前一种效果，不证明时间弱收敛阶，也不消除数值参考的偏差。细网格收益差无法分辨，说明的是统计分辨率的限制，不能据此认定真实偏差为零。
+
+\newpage
 \section{讨论与结论}
-GBM 实验支持三个结论。第一，与精确解进行共同路径比较，可以观察到 Milstein 的强收敛优势。第二，强阶和弱阶回答不同问题：尽管逐路径误差不同，两种方法对终值均值却有相同的一阶偏差。第三，分布和正值性检查提供了单个均值无法提供的信息。当 GBM 的精确转移可用时，对数价格模拟更直接；在价格上离散仍然是一个有用的受控验证实验。
+\textbf{路径精度。}GBM 的精确值与数值值共用同一条布朗路径，因此能够直接比较。测得的强斜率 0.500 和 0.991 展示了 Milstein 的预期优势。步长缩小 16 倍时，EM 的终值误差约缩小 4 倍，Milstein 约缩小 15.6 倍。这是在固定网格下比较精度，并非在相同计算成本下比较速度。
 
-对于非仿射模型，有界正波动率和指数价格表示使测试路径上的价格保持有限且为正。嵌套网格比较提供了加密收敛的证据，也揭示了数值参考会如何影响测得的阶数；它们不能给出精确误差。特别是，当收益区间包含零时，不能宣称已经测出弱收敛阶；当参考差异与粗网格差异相当时，对比较精度也必须保持谨慎。
+\textbf{均值精度。}路径更准确，不自动意味着每个观测量的偏差都更小。两种 GBM 方法有相同的解析一阶均值偏差，控制后的模拟斜率也接近一阶。直方图和分位数进一步检查了均值无法反映的分布特征。各网格观测到的负终值频率均为零，但 EM 公式仍然允许负更新。
 
-主要计算取舍是路径数和时间分辨率之间的平衡。将 $h$ 减半，大约使每条路径的更新次数加倍；将 $M$ 增加四倍，蒙特卡洛标准误通常约减半。配对差和控制变量处理抽样部分，参考加密处理离散部分。增加路径数不能修复分辨率不足的参考，减小步长也不能单独消除抽样不确定性。
+\textbf{没有精确解时的精度。}非仿射模型在三种参考下的强斜率都接近半阶。较粗网格的看涨收益差可以从抽样噪声中分辨出来，较细网格则不能，因此不对完整范围指定弱阶。样本量实验显示，增加路径数使区间宽度近似按 $M^{-1/2}$ 缩小，但三种样本规模仍无法分辨 $N=64$ 的收益差。
 
-本文完成了题目第四方向的主要要求：精确解--EM--Milstein 比较、使用共同路径的强弱收敛、对数正态分布验证、抽样区间以及非仿射模型的嵌套参考检查。没有用确定性稳定性图或标量 Milstein 扩展替代这些要求。正值性诊断报告的是终值频率，并未统计所有中间更新；结论限于本文的参数、时间区间、误差范数、样本数和拟合窗口。
+三个问题因此得到不同层次的回答：GBM 的精确解验证、均值偏差的解析解释，以及非仿射模型的参考加密证据。增加路径数不能修复分辨率不足的参考，减小步长也不能单独消除抽样不确定性。上述结论针对本文给定的参数、终值误差指标和网格范围。
 
 \subsection*{可复现性}
-随附 Python 文件和保存结果记录了随机种子、样本数量和更新公式。本文使用已有实验结果，没有把它描述为一次新的完整模拟运行。附录给出核心更新和复现命令。
+随附 Python 文件和保存结果记录了随机种子、样本数量和更新公式。样本量实验读取已有配对终值，没有重新运行 SDE 模拟；全样本均值与标准误差已核对，与保存的原实验一致。附录给出核心更新和复现命令。
 
 \subsection*{AI 致谢}
 本报告使用 OpenAI Codex 辅助解释数学方法、开发和检查 Python 代码、完成数值计算，以及起草和修改报告。AI 也帮助改善了讨论和结果呈现的清晰度。
@@ -321,8 +343,10 @@ python run_all.py
 # 在不重新模拟的情况下核对已有结果：
 python verify.py
 \end{lstlisting}
-\noindent 在本目录中编译中文报告：
+\noindent 在本目录中重建补充表格并编译中文报告：
 \begin{lstlisting}[numbers=none]
+python sample_size_study.py
+python translate_figures.py
 tectonic Coursework_Undergraduate_中文.tex
 \end{lstlisting}
 \noindent\small 原项目的 \texttt{results/} 保存机器可读的表格和日志，\texttt{figures/} 保存矢量 PDF 和 PNG 图。附录代码用于解释核心算法；完整复现需要两个模拟模块，而只重建报告表格不会重新模拟路径。

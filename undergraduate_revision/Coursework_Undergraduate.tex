@@ -20,7 +20,7 @@ breaklines=true,frame=single,rulecolor=\color{black!40},tabsize=4}
 \begin{document}
 \maketitle
 \begin{abstract}
-This report compares exact simulation, Euler--Maruyama (EM), and Milstein for geometric Brownian motion (GBM), and then investigates a non-affine stochastic-volatility model for which a numerical reference is required. All discretisations are coupled through aggregated Brownian increments. For GBM, the measured terminal strong orders are \GBMEMRate{} for EM and \GBMMilRate{} for Milstein, consistent with orders $1/2$ and $1$. Weak mean bias is separated from Monte Carlo uncertainty using paired differences, independently fitted control variates, and an analytic discrete-mean identity. The terminal distribution is checked against the exact lognormal law. In the non-affine model, EM is applied to log price and the volatility factor, preserving positive prices. Its observed strong rate is \NARate{} on the stated fitting window. Payoff bias is reported with confidence intervals and three nested reference grids; unresolved biases are not assigned a convergence order. The experiments demonstrate why an exact benchmark validates a method, while agreement between numerical grids requires a separate reference-resolution assessment.
+This report asks three questions: which method follows a given random path more accurately, whether more accurate paths also give a more accurate mean, and how to assess accuracy without an exact solution. Geometric Brownian motion (GBM) provides an exact benchmark for Euler--Maruyama (EM) and Milstein. Their measured terminal strong orders are \GBMEMRate{} and \GBMMilRate{}, while both have the same first-order bias in the mean. A non-affine stochastic-volatility model then requires a numerical reference. Three nested reference grids give empirical strong slopes close to one half, but fine-grid call-payoff differences cannot be distinguished reliably from sampling noise. One sample-size study, using existing paired terminal samples, illustrates how additional paths reduce this uncertainty without removing time-discretisation bias.
 \end{abstract}
 \tableofcontents
 \vfill
@@ -28,7 +28,9 @@ This report compares exact simulation, Euler--Maruyama (EM), and Milstein for ge
 
 \newpage
 \section{Introduction and theoretical background}
-The supplied problem pack selects an SDE pathway in which strong and weak convergence, sampling uncertainty, and nested-grid validation replace deterministic ODE stability-region and adaptive-step analyses \cite{pack}. This topic is useful because GBM offers an exact pathwise benchmark, whereas the prescribed non-affine model makes time discretisation part of the solution. The objective is to establish what the experiments actually validate, rather than infer accuracy from plausible-looking sample paths.
+The problem pack uses strong and weak convergence, sampling uncertainty and nested grids to assess SDE methods \cite{pack}. GBM is a useful starting point because its exact solution lets us check the implementation. The non-affine model then shows how this approach changes when an exact sampler is unavailable.
+
+The results follow three questions. First, how accurately does each method follow the same random path (Section~\ref{sec:question-path})? Second, does a better path approximation also give a better mean (Section~\ref{sec:question-mean})? Third, how can a calculation be assessed without an exact solution (Section~\ref{sec:question-reference})? Throughout, increasing the number of time steps $N$ improves time resolution, while increasing the number of paths $M$ improves statistical precision.
 
 \subsection{GBM and its exact transition}
 For $S_0>0$, the It\^o SDE and log transformation are
@@ -141,8 +143,8 @@ The use of $Y_n$ in both updates matters. Replacing it by $Y_{n+1}$ in the first
 All calculations use double precision and fixed NumPy generators. Production paths are processed in batches to bound memory. Seeds, batch sizes, runtime versions, elapsed times, and full precision results are stored in the accompanying JSON files. No external market data are used. GBM compares exact, EM, and Milstein on price; the non-affine experiment uses EM with successively finer references. The payoff is $\varphi(S)=(S-100)^+$, an \emph{undiscounted expected call payoff} under the stated model drift. No risk-neutral interpretation or option price is inferred without a pricing measure and discount rate.
 
 \newpage
-\section{GBM numerical results}
-\subsection{Strong convergence}
+\section{Which method follows the same random path more accurately?}\label{sec:question-path}
+\subsection{GBM strong convergence}
 \begin{figure}[H]\centering
 \includegraphics[width=.92\textwidth]{figures/report_gbm_strong.pdf}
 \caption{Coupled GBM terminal $L^1$ error. Error bars are pointwise 95\% Monte Carlo intervals; many are smaller than the marker. Reference lines indicate orders $1/2$ and $1$.}
@@ -150,16 +152,17 @@ All calculations use double precision and fixed NumPy generators. Production pat
 \input{results/gbm_strong_table.tex}
 The fitted slopes are \GBMEMRate{} for EM and \GBMMilRate{} for Milstein on \GBMFitWindow{}. The observed rates match the theoretical distinction: EM omits the quadratic stochastic increment, whereas Milstein accounts for it. At the finest step, Milstein has a substantially lower pathwise error. This comparison uses exactly the same Brownian paths, so differences between methods arise from the update rules rather than from different realizations of the driving noise.
 
-The exact solution has no time-discretisation error at the simulated grid points. Small floating-point changes can occur when sums are regrouped, but these are not a convergence rate. The reported strong errors compare terminal prices rather than the maximum error over the whole path; an experiment using a path-supremum norm would be a different diagnostic.
+A half-order method reduces error by about $1/\sqrt2$ when the step is halved; a first-order method approximately halves the error. From $N=64$ to $1024$, the step decreases by a factor of 16. EM's error falls from 0.66641 to 0.16658, a factor of 4.00, close to $\sqrt{16}$. Milstein's error falls from 0.02391 to 0.00153, a factor of about 15.6, close to 16. These are terminal price errors, not maximum errors along the whole path. The exact grid values have no time-discretisation error.
 
 \newpage
-\subsection{Weak convergence and variance reduction}\label{sec:gbmweak}
+\section{Does a better path approximation give a better mean?}\label{sec:question-mean}
+\subsection{GBM weak convergence}\label{sec:gbmweak}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_gbm_weak.pdf}
-\caption{GBM mean bias magnitude. Controlled paired estimates are compared with the analytic discrete-mean bias. Raw estimates and intervals remain available in the numerical tables.}
+\includegraphics[width=.70\textwidth]{figures/report_gbm_weak.pdf}
+\caption{GBM mean bias magnitude. Controlled paired estimates are compared with the analytic discrete-mean bias. Raw estimates and intervals remain available in the saved CSV data.}
 \end{figure}
 \input{results/gbm_weak_table.tex}
-The analytic bias is identical for EM and Milstein even though their strong errors differ. Its fitted order is \GBMAnalyticWeakRate{}. The controlled Monte Carlo slopes are \GBMEMWeakRate{} and \GBMMilWeakRate{} on the stated data, interpreted alongside the intervals rather than as a substitute for equation~\eqref{eq:weak}. At small $h$, the raw paired EM estimate is too noisy to resolve this small bias reliably.
+For the mean, the answer is no: EM and Milstein have identical analytic biases despite their different strong errors. Each step has the same expected multiplier $1+\mu h$, so equation~\eqref{eq:weak} applies to both. The analytic fitted order is \GBMAnalyticWeakRate{} and the controlled Monte Carlo slopes are \GBMEMWeakRate{} and \GBMMilWeakRate{}. This conclusion concerns the mean observable; it does not say that every payoff has the same bias for both methods.
 
 The purpose of a control variate is to remove sampling noise without changing the quantity being estimated. If $D=S_N^h-S_T$ and a random variable $C$ has known mean zero, then, for a fixed coefficient $\beta$,
 \begin{equation}\label{eq:control-simple}
@@ -167,7 +170,8 @@ The purpose of a control variate is to remove sampling noise without changing th
 \end{equation}
 When $C$ varies with $D$, subtracting a suitable multiple can make the sample average much less noisy. The implementation uses five such variables calculated from the same Brownian increments. Their coefficients are fitted on 20,000 separate pilot paths and then held fixed for the 160,000 production paths. The detailed formulas remain in \texttt{gbm.py}; they are a computational aid, rather than an additional convergence method.
 
-For EM at $N=1024$, the raw paired standard error is $5.46\times10^{-4}$, larger than the analytic bias magnitude $1.28\times10^{-4}$. After variance reduction it is $8.41\times10^{-8}$. This explains why variance reduction was used. Milstein's raw paired interval at this grid already excludes zero. The analytic bias is used to check the simulated answer, not substituted for it.
+\input{results/control_se_table.tex}
+Table~\ref{tab:control-se} explains the need for variance reduction: EM's raw standard error exceeds the mean-bias magnitude $1.28\times10^{-4}$. Milstein's raw interval already excludes zero. The controls reduce estimation noise; they change neither the time-stepping methods nor their bias. The analytic bias is only a validation target.
 
 \newpage
 \subsection{Distribution and positivity}
@@ -201,7 +205,7 @@ $N$ & EM: $S_N<0$ & Milstein: $S_N<0$\\\midrule
 The saved counts are for $S_N\le0$ and are all zero, so the strictly negative counts in Table~\ref{tab:negative-frequency} are also zero. These are terminal frequencies, not counts of paths ever becoming negative: intermediate GBM prices were not recorded by this diagnostic. Zero observed negatives does not prove that EM preserves positivity. Negative prices could distort payoff estimates; clipping them to zero would also change the method. Neither scheme is clipped here.
 
 \newpage
-\section{Non-affine numerical results}
+\section{How can we assess accuracy without an exact solution?}\label{sec:question-reference}
 \subsection{Strong differences against a numerical reference}
 \begin{figure}[H]\centering
 \includegraphics[width=.92\textwidth]{figures/report_nonaffine_strong.pdf}
@@ -215,7 +219,7 @@ If $S^\star$ denotes the unknown exact terminal value, the reverse triangle ineq
 \left|\mathbb E|S_h-S^\star|-\mathbb E|S_h-S_r|\right|
 \leq \mathbb E|S_r-S^\star|.
 \end{equation}
-The right-hand side is unknown. Replacing $r$ by a finer grid measures sensitivity of the benchmark, not that unknown error itself. The next sections therefore report reference changes separately and avoid presenting a rate fitted through the finest coarse points as exact verification.
+The right-hand side is unknown. Replacing $r$ by a finer grid measures sensitivity of the benchmark, not that unknown error itself. We therefore compare the fitted slope across references as well as reporting the differences between reference solutions.
 
 \newpage
 \subsection{Weak payoff differences}
@@ -241,9 +245,11 @@ Here $\mathcal F_{t_n}$ means the information available at the start of the step
 Equal means do not imply equal expected payoffs. For example, a price always equal to 100 and a price equally likely to be 80 or 120 both have mean 100. Their expected call payoffs $(S-100)^+$ are respectively 0 and 10. The call payoff therefore tests more of the terminal distribution than its mean. Unlike the mean, its expectation is not automatically preserved by the log-EM update, so changing the step size can produce a genuine weak bias. This makes it a nontrivial weak observable; it is not the only possible choice, and does not guarantee a measurable bias at every grid.
 
 \newpage
-\section{Reference refinement and validation}
+\subsection{Does the answer change when the reference is refined?}
 \input{results/nonaffine_reference_table.tex}
 \NAReferenceInterpretation{}
+\input{results/reference_slopes_table.tex}
+Table~\ref{tab:reference-slopes} keeps the fitting window fixed and changes only the reference. The three slopes, 0.496, 0.493 and 0.491, support a stable half-order trend on this window. Their agreement is numerical evidence, not an exact-error bound.
 \begin{table}[H]\centering
 \caption{Brownian and state diagnostics at the finest non-affine grid.}
 \input{results/nonaffine_diagnostics_table.tex}
@@ -256,17 +262,31 @@ The corresponding undiscounted payoff estimate is \NAPayoff{} with interval \NAP
 As requested in the problem pack, EM is used for this two-noise model. A multidimensional Milstein method would need additional cross-noise terms; the scalar GBM formula cannot simply be copied into this system. No such extension is needed for the present comparison.
 
 \newpage
+\subsection{One sample-size study: what do more paths improve?}\label{sec:sample-size}
+Fix the coarse grid at $N=64$ and the reference at $N_{\rm ref}=8192$. From the saved terminal arrays, form the paired payoff differences
+\begin{equation}\label{eq:sample-size-difference}
+D_i=(S_{T,i}^{(1/64)}-100)^+-(S_{T,i}^{(1/8192)}-100)^+.
+\end{equation}
+Use the first 10,000, 40,000 and 100,000 pairs in their saved order. These nested subsets reuse observations, so the three estimates are correlated; they are not independent repeated experiments. No new paths or alternative seeds are generated.
+\input{results/sample_size_table.tex}
+For independent paths within each subset, the standard error is $s_D/\sqrt M$. If the sample variance changes little, quadrupling $M$ should halve this error. In Table~\ref{tab:sample-size}, it falls from 0.005149 at 10,000 paths to 0.002592 at 40,000, a ratio of 0.503. At 100,000 paths it is 0.001633, about 0.317 of its initial value, close to $1/\sqrt{10}$. Thus the observed uncertainty decreases at the expected scale.
+
+All three intervals still contain zero. More paths improve precision but do not guarantee that this bias becomes detectable at the available sample size. The decreasing point estimates do not show that the method's bias is decreasing: both time grids are fixed, so all three estimates target the same unknown expected difference. Nor should the 100,000-path estimate be treated as its exact value.
+
+\textbf{Practical conclusion.} Increasing $M$ reduces sampling uncertainty. Increasing $N$ changes the time discretisation. This study addresses only the first effect; it neither establishes a weak time-convergence order nor removes bias in the numerical reference. It explains why unresolved fine-grid payoff differences are a statistical limitation, not evidence that their true bias is zero.
+
+\newpage
 \section{Discussion and conclusion}
-The GBM experiments establish three distinct facts. First, coupling against its exact solution recovers the expected strong-order advantage of Milstein. Second, strong order and weak order answer different questions: both methods have the same first-order bias in the terminal mean despite different pathwise errors. Third, distributional and positivity checks add information that a single mean does not contain. Log-price simulation is preferable when exact GBM transitions are available, while price-based discretisation remains a useful controlled validation exercise.
+\textbf{Path accuracy.} GBM supplies a direct answer because the exact and numerical values use the same Brownian path. The measured strong slopes, 0.500 and 0.991, show the expected advantage of Milstein. Refining the step by a factor of 16 reduces EM's terminal error by about 4 and Milstein's by about 15.6. This compares accuracy at fixed grids; it is not a claim about speed at equal computing cost.
 
-For the non-affine model, bounded positive volatility and the exponential price representation give finite, positive simulated prices on the tested paths. Nested-grid comparisons provide evidence of refinement convergence and expose how a numerical benchmark can affect the measured rate. They do not produce exact errors. In particular, payoff intervals that overlap zero cannot support an asserted weak slope, and a reference residual comparable with a coarse-grid difference limits the precision of that comparison.
+\textbf{Mean accuracy.} More accurate paths do not automatically give a smaller bias for every observable. Both GBM methods have the same analytic first-order mean bias; controlled estimates recover slopes near one. The histogram and quantiles examine distributional features that the mean alone cannot check. The observed negative terminal frequency is zero on all tested grids, while the EM formula still permits negative updates.
 
-The main computational trade-off is between path count and temporal resolution. Halving $h$ approximately doubles updates per path. Increasing $M$ by a factor of four approximately halves the Monte Carlo standard error. Coupled differences and control variates address the sampling component, while refinement addresses discretisation. Extra paths cannot repair an underresolved reference, and smaller steps cannot by themselves remove sampling uncertainty.
+\textbf{Accuracy without an exact solution.} For the non-affine model, the strong slopes remain close to one half across three references. Coarse-grid call-payoff differences are distinguishable from sampling noise; the finer-grid differences are not. No weak order is assigned to the full range. The sample-size study confirms that adding paths narrows intervals approximately as $M^{-1/2}$, but all tested sample sizes still leave the $N=64$ payoff difference unresolved.
 
-The main experiments follow the SDE-specific route of Problem~4: exact--EM--Milstein comparison, strong and weak convergence with coupled paths, lognormal validation, sampling intervals, and non-affine nested-reference checks. No deterministic stability plot or scalar Milstein extension is substituted for these requirements. The optional positivity diagnostic reports terminal frequencies; it does not count every negative intermediate update. Conclusions apply to the stated parameters and grid ranges.
+The calculations therefore answer the three questions at different levels: exact-solution validation for GBM, an analytic explanation of its mean bias, and refinement evidence for the non-affine model. Additional paths cannot correct an insufficiently fine reference, and finer steps alone cannot remove sampling uncertainty. These conclusions concern the stated parameters, terminal error measures and grid ranges.
 
 \subsection*{Reproducibility}
-The Python files and saved results in the original package document the random seeds, sample sizes and updates used. This revised report reuses those experiments; it does not present them as a new simulation run. The appendix records the core updates and reproduction commands.
+The accompanying Python files and saved results record the seeds, sample sizes and updates. The sample-size study reads existing paired terminal arrays; it does not rerun the SDE simulation. Its full-sample mean and standard error agree with the saved experiment. The appendix records the core updates and reproduction commands.
 
 \subsection*{AI acknowledgement}
 OpenAI Codex was used to help explain the mathematical methods, develop and check the Python code, carry out numerical calculations, and draft and revise the report. This assistance included improving the clarity of the discussion and presentation of the results.
@@ -331,8 +351,9 @@ python run_all.py
 # To validate supplied results without resimulation:
 python verify.py
 \end{lstlisting}
-\noindent Compile this revised report separately, from \texttt{undergraduate\_revision/}:
+\noindent Rebuild the supplementary tables and compile from \texttt{undergraduate\_revision/}:
 \begin{lstlisting}[numbers=none]
+python sample_size_study.py
 tectonic Coursework_Undergraduate.tex
 \end{lstlisting}
 \noindent\small In the original package, \texttt{results/} contains machine-readable tables and logs;

@@ -1,0 +1,8 @@
+{
+  "source": "../results/gbm_terminal_stats.csv",
+  "paths_per_method_per_grid": 160000,
+  "checked_rows": 16,
+  "all_nonpositive_terminal_counts_zero": true,
+  "negative_terminal_frequency_each_grid": 0,
+  "intermediate_path_frequency": "not measured by saved diagnostic"
+}

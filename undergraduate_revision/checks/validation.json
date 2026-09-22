@@ -1,0 +1,13 @@
+{
+  "pages": 12,
+  "typesetting_issues": [],
+  "visual_review_pages": [
+    7,
+    9,
+    10,
+    11
+  ],
+  "negative_frequency_rows_checked": 16,
+  "large_simulations_rerun": false,
+  "policy_check": "Supplied problem pack contains no AI policy. Revision follows user confirmation that AI is allowed."
+}

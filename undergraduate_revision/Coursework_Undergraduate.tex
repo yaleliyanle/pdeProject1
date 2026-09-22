@@ -102,7 +102,7 @@ b_{\rm exact}(h)&=-\tfrac12 S_0e^{\mu T}\mu^2T\,h+O(h^2).
 This identity proves first-order weak bias for the mean in this nondegenerate baseline. It is a validation target, not a Monte Carlo estimate.
 
 The simulation also forms zero-mean control variates $C_i$ and estimates
-$\overline{D-\beta^\top C}$. The coefficients $\beta$ are fitted on a separate pilot sample and then held fixed, so the production estimate remains unbiased. Both raw and controlled intervals are retained in the CSV. The pilot is excluded from reported production sample sizes. The variables use centered Brownian quadratic and cubic sums and Gaussian exponential tilting; their definitions are given on page~\pageref{sec:gbmweak}.
+$\overline{D-\beta^\top C}$. The coefficients $\beta$ are fitted on a separate pilot sample and then held fixed, so the production estimate remains unbiased. Both raw and controlled intervals are retained in the CSV. The pilot is excluded from reported production sample sizes. A short explanation is given on page~\pageref{sec:gbmweak}; the five implemented controls and their coefficients are documented in the supplied \texttt{gbm.py} and saved results.
 
 \newpage
 \section{Model and experimental protocol}\label{sec:protocol}
@@ -159,25 +159,20 @@ The exact solution has no time-discretisation error at the simulated grid points
 \caption{GBM mean bias magnitude. Controlled paired estimates are compared with the analytic discrete-mean bias. Raw estimates and intervals remain available in the numerical tables.}
 \end{figure}
 \input{results/gbm_weak_table.tex}
-The analytic bias is identical for EM and Milstein even though their strong errors differ. Its fitted order is \GBMAnalyticWeakRate{}. The controlled Monte Carlo slopes are \GBMEMWeakRate{} and \GBMMilWeakRate{} on the stated data, interpreted alongside the intervals rather than as a substitute for equation~\eqref{eq:weak}. At small $h$, an uncontrolled sample mean has far too much uncertainty to identify a bias of this size.
+The analytic bias is identical for EM and Milstein even though their strong errors differ. Its fitted order is \GBMAnalyticWeakRate{}. The controlled Monte Carlo slopes are \GBMEMWeakRate{} and \GBMMilWeakRate{} on the stated data, interpreted alongside the intervals rather than as a substitute for equation~\eqref{eq:weak}. At small $h$, the raw paired EM estimate is too noisy to resolve this small bias reliably.
 
-For completeness, let $W=\sum_n\Delta W_n$, $Q=\sum_n[(\Delta W_n)^2-h]$,
-$R=\sum_n[(\Delta W_n)^3-3h\Delta W_n]$, and
-$L=\exp(\sigma W-\sigma^2T/2)$. The control vector is
-\begin{equation}
-\begin{split}
-C_1&=L-1,\quad C_2=L(W-\sigma T)/\sqrt T,\\
-C_3&=L(Q-\sigma^2Th)/\sqrt{2Th},\quad
-C_4=L(R-\sigma^3Th^2)/\sqrt{6Th^2},\\
-C_5&=\frac{L[Q^2-(2Th+4\sigma^2Th^2+\sigma^4T^2h^2)]}{\sqrt8\,Th}.
-\end{split}
+The purpose of a control variate is to remove sampling noise without changing the quantity being estimated. If $D=S_N^h-S_T$ and a random variable $C$ has known mean zero, then, for a fixed coefficient $\beta$,
+\begin{equation}\label{eq:control-simple}
+\mathbb E[D-\beta C]=\mathbb E[D].
 \end{equation}
-Gaussian exponential tilting shifts each increment's mean to $\sigma h$ while preserving variance $h$, giving $\mathbb E[C]=0$ componentwise. Production coefficients are fixed from the independent pilot. Therefore the interval describes residual sampling uncertainty without imposing the analytic bias on the estimate.
+When $C$ varies with $D$, subtracting a suitable multiple can make the sample average much less noisy. The implementation uses five such variables calculated from the same Brownian increments. Their coefficients are fitted on 20,000 separate pilot paths and then held fixed for the 160,000 production paths. The detailed formulas remain in \texttt{gbm.py}; they are a computational aid, rather than an additional convergence method.
+
+For EM at $N=1024$, the raw paired standard error is $5.46\times10^{-4}$, larger than the analytic bias magnitude $1.28\times10^{-4}$. After variance reduction it is $8.41\times10^{-8}$. This explains why variance reduction was used. Milstein's raw paired interval at this grid already excludes zero. The analytic bias is used to check the simulated answer, not substituted for it.
 
 \newpage
 \subsection{Distribution and positivity}
 \begin{figure}[H]\centering
-\includegraphics[width=.94\textwidth]{figures/gbm_distribution.pdf}
+\includegraphics[width=.76\textwidth]{figures/gbm_distribution.pdf}
 \caption{GBM terminal distribution compared with the exact lognormal law. The histogram is a sampling diagnostic; quantiles give a more precise distributional comparison.}
 \end{figure}
 \input{results/gbm_quantile_table.tex}
@@ -193,7 +188,17 @@ For Milstein, completing the square gives the multiplier
 \tfrac12\sigma^2(\Delta W+1/\sigma)^2+
 \tfrac12+(\mu-\tfrac12\sigma^2)h.
 \end{equation}
-It can be negative only if $(\sigma^2-2\mu)h>1$. In this baseline $\sigma^2-2\mu=-0.01$, so Milstein is strictly positive for every $h>0$. In general parameter regimes this is not guaranteed. No negative prices in a finite simulation proves only what was observed; it does not make EM positivity preserving. Clipping negative values would change the method and potentially bias nonlinear payoff estimates. Neither scheme is clipped here.
+It can be negative only if $(\sigma^2-2\mu)h>1$. Here $\sigma^2-2\mu=-0.01$, so Milstein is positive for every $h>0$ in this parameter set. EM has a nonzero theoretical probability of a negative update, although that probability is extremely small for these parameters.
+
+\begin{table}[H]\centering\small
+\caption{Observed GBM negative terminal frequency: 160,000 paths for each method at each grid.}\label{tab:negative-frequency}
+\begin{tabular}{ccc}\toprule
+$N$ & EM: $S_N<0$ & Milstein: $S_N<0$\\\midrule
+8, 16, 32, 64 & 0/160,000 (0\%) at each grid & 0/160,000 (0\%) at each grid\\
+128, 256, 512, 1024 & 0/160,000 (0\%) at each grid & 0/160,000 (0\%) at each grid\\\bottomrule
+\end{tabular}
+\end{table}
+The saved counts are for $S_N\le0$ and are all zero, so the strictly negative counts in Table~\ref{tab:negative-frequency} are also zero. These are terminal frequencies, not counts of paths ever becoming negative: intermediate GBM prices were not recorded by this diagnostic. Zero observed negatives does not prove that EM preserves positivity. Negative prices could distort payoff estimates; clipping them to zero would also change the method. Neither scheme is clipped here.
 
 \newpage
 \section{Non-affine numerical results}
@@ -215,18 +220,25 @@ The right-hand side is unknown. Replacing $r$ by a finer grid measures sensitivi
 \newpage
 \subsection{Weak payoff differences}
 \begin{figure}[H]\centering
-\includegraphics[width=.92\textwidth]{figures/report_nonaffine_weak.pdf}
+\includegraphics[width=.69\textwidth]{figures/report_nonaffine_weak.pdf}
 \caption{Signed paired differences in the expected call payoff relative to the finest EM reference. Error bars are 95\% sampling intervals; the zero line identifies unresolved bias signs.}
 \end{figure}
 \input{results/nonaffine_weak_table.tex}
 \NAWeakInterpretation{}
-The positive-part payoff is nonsmooth at the strike, and a weak order should not be assumed from smooth-test-function theory without further justification. The purpose of the intervals is to distinguish a visible discretisation effect from Monte Carlo noise. Common random numbers substantially reduce the variance of payoff \emph{differences}; they do not eliminate it and do not remove the numerical reference bias.
+The payoff has a corner at the strike, so a weak order should not simply be assumed from smooth-function theory. The paired intervals show whether the estimated difference can be distinguished from sampling noise; they do not include reference bias.
 
-A separate first-moment check has an exact target. It\^o's lemma gives $dS=\mu S\,dt+g(Y)S\,dW^{(1)}$. Since $g$ is bounded, the associated stochastic exponential is a true martingale on the finite horizon, and $\mathbb E[S_T]=100e^{0.05}$. The log-EM scheme also satisfies
-\begin{equation}
-\mathbb E[S_{n+1}\mid\mathcal F_{t_n}]=e^{\mu h}S_n,
+\subsection{Why use a call payoff instead of just the mean?}
+The continuous model satisfies $\mathbb E[S_T]=100e^{0.05}$. However, the log-EM method also gives this mean at \emph{every} step size. To see why, set $g_n=g(Y_n)$. At the start of the step, $S_n$ and $g_n$ are known and the next increment is $N(0,h)$. Hence
+\begin{equation}\label{eq:mean-preservation}
+\begin{aligned}
+\mathbb E[S_{n+1}\mid\mathcal F_{t_n}]
+&=S_n e^{(\mu-g_n^2/2)h}\mathbb E[e^{g_n\Delta W_n^{(1)}}\mid\mathcal F_{t_n}]\\
+&=S_n e^{(\mu-g_n^2/2)h}e^{g_n^2h/2}=S_ne^{\mu h}.
+\end{aligned}
 \end{equation}
-because $g(Y_n)$ is known before the independent Gaussian increment. Thus its first moment is exact for any uniform step, even when its payoff expectation and individual paths are inaccurate. Agreement of the mean alone cannot establish weak accuracy for the call payoff.
+Here $\mathcal F_{t_n}$ means the information available at the start of the step. Repeating this calculation gives $\mathbb E[S_N]=100e^{0.05}$. Thus the mean is a useful implementation check, but has zero time-stepping bias for this scheme and cannot reveal its weak convergence rate.
+
+Equal means do not imply equal expected payoffs. For example, a price always equal to 100 and a price equally likely to be 80 or 120 both have mean 100. Their expected call payoffs $(S-100)^+$ are respectively 0 and 10. The call payoff therefore tests more of the terminal distribution than its mean. Unlike the mean, its expectation is not automatically preserved by the log-EM update, so changing the step size can produce a genuine weak bias. This makes it a nontrivial weak observable; it is not the only possible choice, and does not guarantee a measurable bias at every grid.
 
 \newpage
 \section{Reference refinement and validation}
@@ -241,15 +253,7 @@ The variance targets for both Brownian increments are $h$, and their target corr
 The finest-grid mean is \NAExactMean{} with 95\% interval \NAExactMeanCI{}.
 The corresponding undiscounted payoff estimate is \NAPayoff{} with interval \NAPayoffCI{}. This latter interval describes sampling uncertainty about the \emph{finest discrete model}; the refinement table is still needed to assess its bias.
 
-This system also explains the limits of scalar Milstein. For independent Brownian drivers write $a(y)=\xi\sqrt{1+y^2}$, $c=\sqrt{1-\rho^2}$, and the diffusion columns
-\begin{equation}
-b_1=(g,\rho a)^\top,\qquad b_2=(0,ca)^\top .
-\end{equation}
-Their commutator is
-\begin{equation}
-(Db_2)b_1-(Db_1)b_2=(-ca\,g'(y),0)^\top\ne0.
-\end{equation}
-The noises are noncommutative. A general order-one multidimensional Milstein implementation needs cross terms and iterated stochastic integrals; copying the scalar GBM correction would not justify an order-one claim \cite{higham,kloeden}.
+As requested in the problem pack, EM is used for this two-noise model. A multidimensional Milstein method would need additional cross-noise terms; the scalar GBM formula cannot simply be copied into this system. No such extension is needed for the present comparison.
 
 \newpage
 \section{Discussion and conclusion}
@@ -259,10 +263,13 @@ For the non-affine model, bounded positive volatility and the exponential price 
 
 The main computational trade-off is between path count and temporal resolution. Halving $h$ approximately doubles updates per path. Increasing $M$ by a factor of four approximately halves the Monte Carlo standard error. Coupled differences and control variates address the sampling component, while refinement addresses discretisation. Extra paths cannot repair an underresolved reference, and smaller steps cannot by themselves remove sampling uncertainty.
 
-The work fully addresses the SDE-specific route of Problem~4: exact--EM--Milstein comparison, strong and weak convergence with coupled paths, lognormal validation, sampling intervals, and non-affine nested-reference checks. No deterministic stability plot or scalar Milstein extension is substituted for these requirements. The numerical conclusions are limited to the stated parameter sets, horizon, error norm, sample sizes, and fitting windows.
+The main experiments follow the SDE-specific route of Problem~4: exact--EM--Milstein comparison, strong and weak convergence with coupled paths, lognormal validation, sampling intervals, and non-affine nested-reference checks. No deterministic stability plot or scalar Milstein extension is substituted for these requirements. The optional positivity diagnostic reports terminal frequencies; it does not count every negative intermediate update. Conclusions apply to the stated parameters and grid ranges.
 
-\subsection*{Reproducibility and assistance}
-The accompanying Python files generate all numerical results from fixed seeds; report tables are built directly from the saved results. Timings describe this machine and run, not portable performance guarantees. The appendix records the core updates and reproduction commands. OpenAI Codex assisted with derivations, implementation, numerical execution, and report preparation. This acknowledgement does not assert that a student has independently reviewed or approved the work.
+\subsection*{Reproducibility}
+The Python files and saved results in the original package document the random seeds, sample sizes and updates used. This revised report reuses those experiments; it does not present them as a new simulation run. The appendix records the core updates and reproduction commands.
+
+\subsection*{AI acknowledgement}
+OpenAI Codex was used to help explain the mathematical methods, develop and check the Python code, carry out numerical calculations, and draft and revise the report. This assistance included improving the clarity of the discussion and presentation of the results.
 
 \begin{thebibliography}{9}
 \bibitem{pack} \emph{Problem Pack: Five Suggested Directions for the ODE IVP Project}.
@@ -316,16 +323,19 @@ def mean_ci(values):
 # Weak: mean_ci(maximum(s_coarse-100,0)
 #               -maximum(s_reference-100,0))
 \end{lstlisting}
-\noindent Run from the package directory using Python~3.12:
+\noindent Run the experiments from the original package directory using Python~3.12:
 \begin{lstlisting}[numbers=none]
 python -m pip install -r requirements.txt
 python run_all.py
-pdflatex Problem4_FinancialSDE_Coursework.tex
-pdflatex Problem4_FinancialSDE_Coursework.tex
+
 # To validate supplied results without resimulation:
 python verify.py
 \end{lstlisting}
-\noindent\small \texttt{results/} contains machine-readable tables and logs;
+\noindent Compile this revised report separately, from \texttt{undergraduate\_revision/}:
+\begin{lstlisting}[numbers=none]
+tectonic Coursework_Undergraduate.tex
+\end{lstlisting}
+\noindent\small In the original package, \texttt{results/} contains machine-readable tables and logs;
 \texttt{figures/} contains vector PDFs and PNGs. The supplied PDF is already compiled. The appendix listing is explanatory; the tests exercise the actual imported implementation functions. Full reproduction includes both simulation modules, while rebuilding only the report tables does not resimulate paths.
 \end{document}
 

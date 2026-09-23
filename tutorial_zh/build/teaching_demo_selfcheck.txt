@@ -1,0 +1,3 @@
+PASS GBM recurrence, exact formula and Brownian aggregation
+PASS non-affine simultaneous old-state update and constant-volatility limit
+PASS stable logistic and batch-accumulated Monte Carlo standard error

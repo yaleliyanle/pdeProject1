@@ -1,0 +1,101 @@
+\section{进阶：逐项理解 GBM 程序中的五个控制变量}\label{sec:controls}
+\subsection{先掌握一个控制变量的原理}
+设我们想估计 $b=\E D$，又找到了一个期望已知为零的随机变量 $C$。
+对任意事先固定的常数 $\beta$，
+\begin{equation}\label{eq:cv-unbiased}
+ \E[D-\beta C]=\E D-\beta\E C=b.
+\end{equation}
+均值不变，方差却能改变：
+\begin{equation}\label{eq:cv-variance}
+ \Var(D-\beta C)=\Var D-2\beta\Cov(D,C)+\beta^2\Var C.
+\end{equation}
+若 $\Var C>0$，对 $\beta$ 求导，最优值为 $\beta_\star=\Cov(D,C)/\Var C$。
+当 $C$ 与 $D$ 高度相关时，减去 $\beta C$ 就像消除误差中可预测的随机波动，只留下较小的剩余噪声。
+例如若 $D=b+3C+\varepsilon$，且 $\E\varepsilon=0$、$\varepsilon$ 独立于 $C$，选择 $\beta=3$ 后得到 $b+\varepsilon$。
+这个例子也说明我们没有把未知常数 $b$ 预先塞入估计。
+
+多个控制组成列向量 $C$，相应最优系数满足
+\begin{equation}\label{eq:cv-vector}
+ \Cov(C,C)\beta=\Cov(C,D),\qquad D_{\mathrm{cv}}=D-\beta^\top C.
+\end{equation}
+程序用独立的 $20000$ 条预实验路径估计协方差、解这个线性系统，再把系数固定，用于 $160000$ 条正式路径。
+不同网格、不同方法各有一套系数。
+条件于预实验得到的 $\widehat\beta$，正式样本与之独立，故
+\begin{equation}\label{eq:cv-pilot}
+ \E[D-\widehat\beta^\top C\mid\widehat\beta]=\E D.
+\end{equation}
+若直接在同一批最终数据上拟合并评估，一般不能不加论证地沿用这个独立性证明。
+独立预实验有清楚的理论好处，代价是增加一次较小的计算。
+
+\subsection{指数加权其实只是给正态密度配方}
+在一个固定网格上，记
+\begin{equation}\label{eq:cv-defs}
+\begin{aligned}
+ W&=\sum_{n=0}^{N-1}\Delta W_n,\qquad
+ L=e^{\sigma W-\sigma^2T/2}=\frac{S_T^{\mathrm{exact}}}{\E S_T},\\
+ Q&=\sum_{n=0}^{N-1}\bigl((\Delta W_n)^2-h\bigr),\qquad
+ R=\sum_{n=0}^{N-1}\bigl((\Delta W_n)^3-3h\Delta W_n\bigr).
+\end{aligned}
+\end{equation}
+已经知道 $\E L=1$。$Q$ 是二次变差与 $T$ 的差，$R$ 是去掉主要线性部分的三次增量和。
+EM 和 Milstein 误差的展开自然包含这些二次、三次项，所以它们适合帮助预测误差波动。
+
+为了计算 $LQ$ 等量的期望，对单个 $u=\Delta W_n\sim N(0,h)$ 配方：
+\begin{equation}\label{eq:cv-tilt-density}
+ e^{\sigma u-\sigma^2h/2}\frac1{\sqrt{2\pi h}}e^{-u^2/(2h)}
+ =\frac1{\sqrt{2\pi h}}e^{-(u-\sigma h)^2/(2h)}.
+\end{equation}
+右边恰好是 $N(\sigma h,h)$ 的密度。
+因为 $T=Nh$，把所有独立增量的密度相乘，就能把 $L$ 分配到每一个增量上。
+于是对满足 $\E[L|F|]<\infty$ 的函数 $F$ 有（后面使用的多项式都满足这一条件）
+\begin{equation}\label{eq:cv-tilt-identity}
+ \E[L F(\Delta W_0,\ldots,\Delta W_{N-1})]
+ =\widetilde\E[F(U_0,\ldots,U_{N-1})],
+\end{equation}
+其中右侧只是记号：$U_n$ 相互独立、服从 $N(\sigma h,h)$。
+这里用到的是普通概率密度配方，不要求先学习一般的测度变换定理；实际仿真也没有改成从这个偏移正态分布抽样。
+
+\subsection{把所需的期望逐个算出来}
+令 $m=\sigma h$，则在加权后的计算中 $U=m+\sqrt h Z$。
+利用标准正态的 $\E Z=\E Z^3=0$、$\E Z^2=1$、$\E Z^4=3$，得到
+\begin{align}
+ \widetilde\E U&=m,\quad \widetilde\E U^2=h+m^2,
+ \quad\widetilde\E U^3=m^3+3mh,\label{eq:cv-gaussian-low}\\
+ \widetilde\E U^4&=m^4+6m^2h+3h^2,\qquad
+ \widetilde\Var(U^2)=2h^2+4m^2h.\label{eq:cv-gaussian-fourth}
+\end{align}
+对 $N=T/h$ 个独立增量求和，就有
+\begin{align}
+ \widetilde\E W&=\sigma T,\label{eq:cv-ew}\\
+ \widetilde\E Q&=Nm^2=\sigma^2Th,\label{eq:cv-eq}\\
+ \widetilde\E R&=Nm^3=\sigma^3Th^2,\label{eq:cv-er}\\
+ \widetilde\Var Q&=N(2h^2+4\sigma^2h^3)=2Th+4\sigma^2Th^2,\label{eq:cv-varq}\\
+ \widetilde\E Q^2&=\widetilde\Var Q+(\widetilde\E Q)^2
+ =2Th+4\sigma^2Th^2+\sigma^4T^2h^2.\label{eq:cv-eq2}
+\end{align}
+关键区别是：原分布下 $\E Q=0$，但 $\E[LQ]$ 不为零，因为 $L$ 与 $Q$ 相关。
+因此不能把 $LQ$ 直接当作零均值控制，必须减去\emph{加权分布下}的中心值。
+
+\subsection{与程序一一对应的控制向量}
+现有 \texttt{simulate\_batch} 函数构造以下五列：
+\begin{align}
+ C_1&=L-1,\label{eq:cv-c1}\\
+ C_2&=\frac{L(W-\sigma T)}{\sqrt T},\label{eq:cv-c2}\\
+ C_3&=\frac{L(Q-\sigma^2Th)}{\sqrt{2Th}},\label{eq:cv-c3}\\
+ C_4&=\frac{L(R-\sigma^3Th^2)}{\sqrt{6Th^2}},\label{eq:cv-c4}\\
+ C_5&=\frac{L\{Q^2-(2Th+4\sigma^2Th^2+\sigma^4T^2h^2)\}}{\sqrt8\,Th}.\label{eq:cv-c5}
+\end{align}
+由式~\eqref{eq:cv-tilt-identity} 和刚才逐项求得的期望，每一列都严格满足 $\E C_j=0$。
+分母用于平衡各列的数值尺度，\emph{不表示加权后的每一列方差恰好等于 1}。
+把某列乘以一个非零常数，再相应调整回归系数，不改变控制变量方法的基本原理。
+
+程序用正式样本的 $D_{\mathrm{cv}}$ 计算均值、样本标准差和置信区间，使用的是实际残差的波动。
+解析偏差只放在另一列作核对目标，并没有代替正式蒙特卡洛估计。
+粗糙的 $\widehat\beta$ 可能使方差减少不充分，却不会在独立性条件下改变估计期望。
+
+\subsection{为什么这里降噪会特别明显？}
+GBM 有极强的解析结构：误差和这些低阶增量组合高度相关。
+最细网格的 EM 原始配对标准误差约为 $5.464\times10^{-4}$，控制后约为 $8.415\times10^{-8}$。
+方差比约为 $4.216\times10^7$；它是标准误差比的平方，不能直接当作标准误差减少倍数。
+这样的效果是本模型、本控制设计和当前网格共同造成的，不能保证任意模型都有同样收益。
+

@@ -1,0 +1,23 @@
+{
+  "pages": 45,
+  "han_characters_in_source": 21077,
+  "unique_labels": 167,
+  "undefined_references": [],
+  "typesetting_issues": [],
+  "compiler": "Tectonic, final build from cached TeX resources",
+  "visual_review_pdf_pages": [
+    1,
+    5,
+    12,
+    13,
+    23,
+    25,
+    29,
+    31,
+    38,
+    40,
+    43,
+    44
+  ],
+  "note": "Font file paths depend on local installation; PDF embeds fonts."
+}

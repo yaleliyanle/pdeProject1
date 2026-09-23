@@ -1,0 +1,134 @@
+% Compile from this directory: tectonic --keep-logs Problem4_Chinese_Tutorial.tex
+\documentclass[11pt,a4paper,fontset=none]{ctexart}
+\usepackage[margin=24mm,headheight=15pt]{geometry}
+\usepackage{fontspec}
+\setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC Bold}]
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans Mono CJK SC}
+\usepackage{amsmath,amssymb,mathtools,booktabs,tabularx,longtable,array}
+\usepackage{graphicx,float,caption,xcolor,listings,enumitem,fancyhdr}
+\usepackage{etoolbox}
+\usepackage[unicode,colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!55!black,citecolor=blue!45!black]{hyperref}
+\usepackage{bookmark}
+\definecolor{ink}{HTML}{203649}
+\definecolor{accent}{HTML}{236C86}
+\definecolor{papergray}{HTML}{F4F6F8}
+\ctexset{section={format=\Large\bfseries\sffamily\color{ink}},subsection={format=\large\bfseries\sffamily\color{ink}}}
+\linespread{1.22}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{3em}
+\setlist{itemsep=3pt,topsep=5pt,parsep=1pt}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\setcounter{tocdepth}{2}
+\numberwithin{equation}{section}
+\newcommand{\E}{\mathbb E}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Cov}{Cov}
+\newcommand{\R}{\mathbb R}
+\lstset{language=Python,basicstyle=\ttfamily\footnotesize,keywordstyle=\color{blue!65!black},
+  commentstyle=\color{green!35!black},stringstyle=\color{orange!60!black},
+  numbers=left,numberstyle=\tiny\color{gray},numbersep=6pt,
+  showstringspaces=false,breaklines=true,breakatwhitespace=false,
+  frame=single,rulecolor=\color{black!15},backgroundcolor=\color{papergray},
+  columns=fullflexible,keepspaces=true,tabsize=4,xleftmargin=1.2em,framexleftmargin=.5em}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 第四题中文学习讲义}
+\fancyhead[R]{\small 概率论基础 → 随机微分方程 → 数值实验}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{.3pt}
+\pretocmd{\section}{\clearpage}{}{}
+\hypersetup{pdftitle={第四题：金融随机微分方程——从概率论到代码},pdfauthor={中文学习讲义},pdfsubject={基于现有 Problem 4 文件的中文教学说明}}
+\begin{document}
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\vspace*{20mm}
+{\sffamily\color{accent}\large Problem Pack · Direction 4\par}
+\vspace{8mm}
+{\sffamily\bfseries\Huge 金融随机微分方程\par}
+\vspace{5mm}
+{\sffamily\LARGE 从概率论基础到理论推导与代码实现\par}
+\vspace{12mm}
+{\large 基于本文件夹已有报告、Python 源码和数值结果的中文讲义\par}
+\vspace{12mm}
+\noindent\begin{minipage}{.93\textwidth}
+你已经学过随机变量、期望、方差、正态分布与大数定律。这些知识足以开始学习本题。
+本讲义先解释“随机驱动的连续时间模型”是什么意思，再推导 Itô 公式、几何布朗运动的精确解和两种数值方法，最后把每个概念落实到现有程序和实验数据。
+\end{minipage}
+\vfill
+\noindent\textbf{阅读对象：}没有随机微积分和随机微分方程基础的学习者。\\[4pt]
+\textbf{材料范围：}原题第 6--7 页；现有 GBM 与非仿射波动率两组实验。\\[4pt]
+\textbf{版本：}2026 年 9 月 12 日。\\[4pt]
+\textbf{配套文件：}\texttt{teaching\_demo.py} 为独立教学示例，原实验数据另行保留。
+\end{titlepage}
+\pagenumbering{roman}
+\hypersetup{pageanchor=true}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{先读懂题目：我们究竟要解决什么问题？}\label{sec:question}
+\subsection{题目的主线是验证数值方法，而不是预测股价}
+原题给出五个研究方向，其中第四个方向讨论金融随机微分方程\cite{pack}。
+“随机”意味着：即使初值和参数完全相同，未来仍会因为随机冲击而出现许多不同路径。
+因此，输出不是唯一一条确定曲线，而是一组可能的价格路径以及它们的统计规律。
+这份作业使用人为规定的参数，不涉及用市场数据估计参数，也没有要求给出买卖建议。
+
+第四题安排了两个层次。第一层是几何布朗运动，简称 GBM，它有精确解。
+我们先假装不知道精确解，用数值方法计算，再与精确答案比较，检查方法和程序是否可靠。
+第二层是非仿射随机波动率模型，它的波动率本身会随机变化。
+原题指出，这个一般模型没有已知的实用精确采样器；我们改用更细的数值网格作为参考，并检查参考自身是否稳定。
+它在原题中列为推荐扩展，现有文件已经完成了这一部分，所以本讲义也完整讲解。
+
+这里的“精确模拟”指网格时刻的值服从精确转移规律；在同一个布朗运动驱动下，也能直接给出该时刻的真值。
+它不表示计算机储存了连续时间里的无限多个点，更不表示用有限样本估计期望时没有抽样误差。
+
+\subsection{把原题要求翻译成可执行的任务}
+表~\ref{tab:tasks} 给出题意、数学量与现有实现的对应。
+不要把其他 ODE 方向的 Euler、RK4、隐式方法、稳定域和自适应步长要求照搬过来：
+原题开头明确规定，第四题采用 SDE 的专门比较要求。
+文件夹里的 \texttt{tutorial1/} 是较早的 ODE 学习材料，其中 RK4 稳定域代码不是本题随机方法的实现。
+
+\begin{table}[htbp]\centering\small
+\caption{题目要求与现有文件的对应。}\label{tab:tasks}
+\begin{tabularx}{\textwidth}{p{.22\textwidth}YY}\toprule
+任务 & 实际要回答的问题 & 主要材料\\\midrule
+GBM 精确、EM、Milstein 比较 & 相同随机冲击下，数值终值距离真值有多远？ & \texttt{gbm.py}\\
+强收敛 & 步长减半后，平均绝对路径误差如何下降？ & \texttt{gbm\_convergence.csv}\\
+弱收敛 & 数值方法造成的均值偏差是否与步长成正比？ & 配对差、控制变量及解析偏差\\
+分布验证 & 终值的直方图和分位数是否符合对数正态分布？ & 分布图与分位数表\\
+正值性（选做） & 更新公式是否可能把正价格变成负数？ & 更新乘子的理论分析\\
+非仿射模型 & 如何同步更新对数价格和随机波动因子？ & \texttt{nonaffine.py}\\
+参考网格验证 & 更换更细参考后，结论变化多大？ & 三组参考网格及差异表\\
+程序核验 & 增量、状态、统计量和保存数据是否相互一致？ & \texttt{verify.py}、JSON、NPZ\\\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{符号与阅读路线}
+一个实验有两个不同的“数量”：每条路径有 $N$ 个时间步，总共模拟 $M$ 条路径。
+增加 $N$ 改善时间离散，增加 $M$ 改善统计估计；两者不可混淆。
+表~\ref{tab:notation} 是贯穿讲义的符号表。
+
+\begin{table}[htbp]\centering
+\caption{主要符号。}\label{tab:notation}
+\begin{tabularx}{\textwidth}{lY}\toprule
+符号 & 含义\\\midrule
+$t,T$ & 当前时刻、终止时刻；本实验 $T=1$\\
+$N,h=T/N$ & 一条路径的步数、每一步的时间长度\\
+$M,i$ & 独立路径总数、路径编号\\
+$n,t_n=nh$ & 时间步编号、网格时刻\\
+$W_t,\Delta W_n$ & 布朗运动、$W_{t_{n+1}}-W_{t_n}$\\
+$S_t,S_n^{(h)}$ & 连续模型的价格、步长 $h$ 下的数值价格\\
+$X_t=\log S_t$ & 对数价格；不是另外一种资产\\
+$Y_t,g(Y_t)$ & 波动因子、由波动因子决定的瞬时波动率\\
+$\mu,\sigma$ & GBM 的相对漂移率和波动率\\
+$\varphi(s)$ & 要比较期望的函数，如 $s$ 或 $\max(s-100,0)$\\
+$\E,\Var,\Cov$ & 期望、方差、协方差\\
+$\mathcal F_t$ & 到时刻 $t$ 为止可以使用的信息\\\bottomrule
+\end{tabularx}
+\end{table}
+
+建议按目录顺序学习。控制变量的五个具体公式安排在后面的进阶部分：第一次阅读可先理解“减去一个均值为零、又与误差相关的随机量”，等掌握基本仿真流程后再读完整推导。
+讲义中的大型实验数值来自现有保存文件，并非把小规模教学脚本的输出当作原实验结果。
+我们对保存数组与统计量进行了独立复核；本次没有重新运行原来的全部大型随机实验。

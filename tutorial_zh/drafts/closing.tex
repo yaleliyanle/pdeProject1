@@ -1,0 +1,109 @@
+\section{按这个顺序亲手练习，并检查自己是否真正理解}\label{sec:practice}
+\subsection{四次短练习}
+\begin{enumerate}
+\item \textbf{只生成布朗运动。} 生成 $N=256$ 个独立 $\sqrt{1/256}Z$，用累计和画路径。
+重复许多次，检查 $W_1$ 的样本均值接近 0、方差接近 1。
+然后把增量误改为 $(1/256)Z$，亲眼观察累计方差缩小。这能检验你是否理解 $h$ 与 $\sqrt h$。
+\item \textbf{只做 GBM。} 固定一批细增量，分别计算精确值、EM、Milstein。
+先手算一条路径的一个时间步，再对应代码。把细增量求和成粗增量，比较终值强误差。
+使用 \texttt{teaching\_demo.py} 的默认输出，不急着拟合精细弱阶。
+\item \textbf{再加非仿射模型。} 先把 $g_{\min}=g_{\max}=0.3$，此时资产部分退化为常波动率 GBM，对数 EM 应在每个网格精确。
+恢复原来的 $0.1,0.5$ 后，再看参考网格差。
+这个退化测试能同时发现 Itô 补偿项、粗化和旧状态更新方面的错误。
+\item \textbf{最后学习统计精度。} 比较原始弱偏差和控制后弱偏差的标准误差；
+再阅读原大样本的 CSV。尝试解释为什么“点估计更接近零”本身不能证明方法阶数更高。
+\end{enumerate}
+
+\subsection{常见错误清单：每一项都对应一种具体后果}
+\begin{table}[htbp]\centering\small
+\caption{代码与理论中最常见的混淆。}\label{tab:practice-errors}
+\begin{tabularx}{\textwidth}{YY}\toprule
+错误操作或判断 & 为什么会出问题\\\midrule
+用 $hZ$ 代替 $\sqrt h Z$ & 累计噪声方差随网格加密消失\\
+给每个时刻独立抽取 $N(0,t)$ & 边际正确、时间联合关系错误\\
+对 $\log S$ 使用普通链式法则 & 漏掉 $-\sigma^2/2$，价格均值出错\\
+粗细网格分别抽独立噪声 & 强差包含不同随机路径的天然差异\\
+把 $\E|D|$ 当成弱偏差 & 正负误差无法抵消，计算了另一种量\\
+把标准差当成均值标准误差 & 忘记除以 $\sqrt M$，误读统计精度\\
+弱偏差区间跨零后继续强行拟合 & 容易测出噪声造成的虚假斜率\\
+先更新 $Y$，再用新 $Y$ 更新 $X$ & 破坏既定的同步左端 EM\\
+认为 $Y<0$ 就是负波动率 & 实际波动率是始终为正的 $g(Y)$\\
+把三层参考看作三份精确解 & 忽略所有参考仍有时间离散偏差\\
+把平均收益直接称为期权价格 & 缺少定价测度与贴现设定\\
+只保存随机种子就保证逐位复现 & 批大小、数组布局、版本等也影响随机数分配和浮点结果\\\bottomrule
+\end{tabularx}
+\end{table}
+表~\ref{tab:practice-errors} 可以作为读代码时的自查表；理解每一行的原因，比背下一张方法阶数表更重要。
+
+\subsection{自测与参考答案}
+\begin{enumerate}
+\item \textbf{步长从 $1/64$ 改成 $1/256$，EM 强半阶意味着误差大约缩小几倍？}
+答：步长缩小四倍，误差约缩小两倍。路径数不变时，不能据此断言所有统计量的置信区间也恰好缩小两倍。
+\item \textbf{模拟的 GBM 均值不等于 $105.1271$，一定是程序错了吗？}
+答：不是。即使精确模拟，有限样本均值也有抽样误差；应比较理论目标与合理的标准误差、置信区间。
+若是 EM/Milstein，还存在可解析计算的均值离散偏差。
+\item \textbf{为什么 Milstein 强误差更小，但 GBM 均值弱偏差与 EM 相同？}
+答：Milstein 加入的二次随机修正改善逐路径逼近；该修正条件期望为零，两种方法的一步平均乘子仍都是 $1+\mu h$。
+\item \textbf{把非仿射参考从 4096 步增加到 8192 步，差异很小，是否已证明真误差很小？}
+答：没有。它检验了对参考加密的敏感性；若无额外理论界，无法把参考差等同于参考真误差。
+\item \textbf{为什么非仿射模型的粗网格价格均值也能正确？}
+答：冻结 $g(Y_n)$ 后，指数正态的条件期望恰好抵消 $-g_n^2h/2$。
+均值精确保留，但路径与非线性收益不一定准确。
+\item \textbf{控制变量是不是利用已知答案“作弊”？}
+答：不是。控制量的均值已知为零，独立预实验拟合后，减去它不会改变目标期望。
+解析偏差只作为核对列；正式估计仍由新的随机样本计算。
+\item \textbf{非仿射两维噪声相关，为什么下一步仍能对当前状态条件取期望？}
+答：两个未来增量彼此可以相关，但整对未来增量与过去信息独立。
+当前 $Y_n$ 已知，不等于未来 $Y_{n+1}$ 已知。
+\item \textbf{精确转移是否表示画出的折线就是连续真解？}
+答：不是。精确的是所选网格时刻的值及其联合分布。两点之间画直线只是一种展示方式，并未模拟出全部布朗桥波动。
+\end{enumerate}
+
+\subsection{如果需要用自己的话说明整份项目}
+可以按以下逻辑组织一次口头讲解：价格存在连续累积的随机冲击，所以用布朗运动驱动的 SDE；
+Itô 公式说明为何对数变换产生二阶补偿项，由此得到 GBM 的精确基准；
+EM 冻结一步系数，Milstein 加入噪声强度变化造成的二阶项；
+强误差检验同路径逼近，弱误差检验观测函数的期望，二者都需要与有限样本噪声区分；
+最后，把共同增量、参考加密与置信区间用于没有精确采样器的非仿射模型。
+每一步都应能指向一条公式、一段代码或一份保存的统计证据。
+
+\section{材料来源、文件使用与进一步阅读}\label{sec:sources}
+本讲义依据用户提供的 \texttt{problem\_pack.pdf} 第 6--7 页，以及当前文件夹中的
+\nolinkurl{Problem4_FinancialSDE_Coursework.tex}、\texttt{gbm.py}、\texttt{nonaffine.py}、
+\texttt{verify.py}、\texttt{build\_report\_data.py}、\texttt{run\_all.py} 和保存结果编写。
+下载目录中的原题 PDF 与项目 \texttt{source/problem\_pack.pdf} 经 SHA-256 比较完全一致。
+原题里的任务要求在此作为讲解对象；这份学习讲义按用户的中文教学请求编写，不受原英文报告 12 页篇幅限制。
+
+本次新增的主文件是 \texttt{Problem4\_Chinese\_Tutorial.tex} 和同名 PDF，位于 \texttt{tutorial\_zh/}。
+TeX 主文件已经合并章节和数值表，编译时只需同目录的 \texttt{assets/} 图文件与所需字体、宏包；
+\texttt{drafts/} 是制作时的章节片段，阅读或重新编译主文件不依赖它。
+\texttt{build\_assets.py} 从原保存数据重绘中文图表；\texttt{teaching\_demo.py} 运行教学示例；
+\texttt{audit\_saved\_results.py} 复核保存统计。
+原大型实验的输出文件没有被本讲义的教学程序覆盖。
+
+在此目录运行以下任一方式可编译：
+\begin{lstlisting}[language={}]
+tectonic --keep-logs Problem4_Chinese_Tutorial.tex
+
+# Or, with a full TeX distribution:
+xelatex -interaction=nonstopmode -halt-on-error Problem4_Chinese_Tutorial.tex
+xelatex -interaction=nonstopmode -halt-on-error Problem4_Chinese_Tutorial.tex
+\end{lstlisting}
+中文字体使用 Noto Serif CJK SC、Noto Sans CJK SC 和 Noto Sans Mono CJK SC。
+本机以 Tectonic 编译；在其他机器上可安装同名字体，或修改导言区的字体配置。
+
+进一步学习可读 Higham 的算法入门文章\cite{higham}。
+它面向具有基础概率知识的读者，用小程序讨论布朗运动、随机积分、EM、Milstein 及强弱收敛。
+作者维护的示例程序页面还列出了原文和代码勘误，适合与本题的 Python 实现对照阅读。
+本讲义的详细演算围绕用户的具体题目与既有代码重新展开，不要求读者先读完该文。
+
+\noindent\textbf{编写说明。}本讲义由 AI 根据所提供材料进行中文教学组织、数学推导、代码示例编写、保存数据复核与排版生成；未声称经过教师或作者的人工作业评审。
+
+\begin{thebibliography}{9}
+\bibitem{pack} 用户提供的 \emph{Problem Pack: Five Suggested Directions for the ODE IVP Project}，Direction 4，第 6--7 页。项目内副本：\texttt{source/problem\_pack.pdf}。
+\bibitem{report} 项目已有 \emph{Numerical Simulation of Financial SDEs: Problem 4 GBM Benchmark and Non-Affine Volatility}，2026 年 9 月；配套 Python 源码与 \texttt{results/} 保存结果。
+\bibitem{higham} D. J. Higham. An Algorithmic Introduction to Numerical Simulation of Stochastic Differential Equations. \emph{SIAM Review}, 43(3), 525--546, 2001.
+\href{https://doi.org/10.1137/S0036144500378302}{doi:10.1137/S0036144500378302}。
+\href{https://webhomes.maths.ed.ac.uk/~dhigham/algfiles.html}{作者的示例程序与勘误页面}。
+\end{thebibliography}
+\end{document}

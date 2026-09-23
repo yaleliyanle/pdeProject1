@@ -1,0 +1,291 @@
+\section{几何布朗运动：从模型到精确答案}\label{sec:gbm}
+\subsection{为什么噪声和价格成正比？}
+GBM 模型是
+\begin{equation}\label{eq:gbm-model}
+ dS_t=\mu S_t\,dt+\sigma S_t\,dW_t,\qquad S_0>0.
+\end{equation}
+这表示我们对短时间的\emph{相对}变化建模：$\Delta S/S$ 近似等于 $\mu h+\sigma\sqrt h Z$。
+同样的百分比冲击，对价格 100 和价格 200 的资产分别造成不同的绝对金额变化。
+$\mu$ 控制条件平均变化，$\sigma$ 控制随机变化的标准差规模；$\sigma$ 本身不是方差。
+若时间按年计，$\mu$ 的量纲是每年，$\sigma$ 的量纲是每平方根年。
+
+现有实验选择 $S_0=100$、$\mu=0.05$、$\sigma=0.30$、$T=1$。
+这组 GBM 参数是现有报告的实验选择，而后面非仿射模型的参数是原题指定的。
+对于 $h=1/100$，漂移的相对增量为 $0.0005$，噪声的相对标准差为 $0.03$。
+随机变化在单个短时间步内远大于平均变化，这正是不能把它当成小型确定性扰动的原因。
+
+\subsection{逐项应用 Itô 公式，得到对数价格}
+选择 $f(s)=\log s$，因为 $f'(s)=1/s$ 可以消去式~\eqref{eq:gbm-model} 中的 $S_t$。
+二阶导数是 $f''(s)=-1/s^2$。将 $a(s)=\mu s$、$b(s)=\sigma s$ 代入 Itô 公式，得到
+\begin{equation}\label{eq:gbm-log-derive}
+\begin{aligned}
+ d\log S_t
+ &=\frac1{S_t}(\mu S_t\,dt+\sigma S_t\,dW_t)
+   +\frac12\left(-\frac1{S_t^2}\right)\sigma^2S_t^2\,dt\\
+ &=\left(\mu-\frac12\sigma^2\right)dt+\sigma\,dW_t.
+\end{aligned}
+\end{equation}
+因此 $X_t=\log S_t$ 的系数变成常数。
+从 $0$ 积分到 $t$，使用 $W_0=0$，再取指数，得到
+\begin{align}
+ X_t&=\log S_0+(\mu-\sigma^2/2)t+\sigma W_t,\label{eq:gbm-log-exact}\\
+ S_t&=S_0\exp\bigl((\mu-\sigma^2/2)t+\sigma W_t\bigr).\label{eq:gbm-exact}
+\end{align}
+若担心对 $\log S$ 操作时已经预设了价格为正，可以反过来：先定义式~\eqref{eq:gbm-exact} 中的正过程，再对 $e^{X_t}$ 应用 Itô 公式，直接验证它满足原 SDE；唯一性保证这是所求解。
+
+补偿项 $-\sigma^2/2$ 的作用可用正态分布的指数矩理解。
+对 $Z\sim N(0,1)$，完成平方给出
+\begin{equation}\label{eq:gaussian-mgf}
+\E[e^{aZ}]=\frac1{\sqrt{2\pi}}\int_\R e^{az-z^2/2}\,dz
+ =e^{a^2/2}.
+\end{equation}
+随机指数的平均值并不等于“先平均、再取指数”。如果漏掉补偿项，价格均值会被额外乘上 $e^{\sigma^2t/2}$。
+本实验的\emph{对数}漂移是 $0.05-0.30^2/2=0.005$，而价格均值的增长率仍然是 $0.05$。
+
+\subsection{均值、方差、分位数为什么能作为标准答案？}
+因为 $W_T\sim N(0,T)$，所以
+\begin{equation}\label{eq:gbm-normal}
+ \log S_T\sim N\bigl(\log S_0+(\mu-\sigma^2/2)T,\ \sigma^2T\bigr).
+\end{equation}
+“对数正态”指对数服从正态；价格自身不是正态分布，它只能为正，且通常右偏。
+用式~\eqref{eq:gaussian-mgf} 计算一阶和二阶矩，得到
+\begin{align}
+ \E[S_T]&=S_0e^{(\mu-\sigma^2/2)T}e^{\sigma^2T/2}=S_0e^{\mu T},\label{eq:gbm-mean}\\
+ \E[S_T^2]&=S_0^2e^{(2\mu-\sigma^2)T}e^{2\sigma^2T}
+ =S_0^2e^{2\mu T+\sigma^2T},\label{eq:gbm-second}\\
+ \Var(S_T)&=S_0^2e^{2\mu T}(e^{\sigma^2T}-1).\label{eq:gbm-var}
+\end{align}
+代入现有参数，理论均值约为 $105.1271$，理论方差约为 $1040.7868$，标准差约为 $32.2612$。
+大量路径的均值应在抽样误差范围内接近该值；单条路径完全可能低于 100。
+
+设 $\Phi$ 是标准正态分布的累积分布函数。第 $p$ 分位数 $q_p$ 满足 $\Pr(S_T\le q_p)=p$，由单调变换得到
+\begin{equation}\label{eq:gbm-quantile}
+ q_p=S_0\exp\bigl((\mu-\sigma^2/2)T+\sigma\sqrt T\,\Phi^{-1}(p)\bigr).
+\end{equation}
+其中位数约为 $100.5013$，低于均值；少数较大的终值把均值向右拉。
+密度函数也可由变量变换得到：
+\begin{equation}\label{eq:gbm-density}
+ p_T(s)=\frac1{s\sigma\sqrt{2\pi T}}
+ \exp\left[-\frac{\{\log(s/S_0)-(\mu-\sigma^2/2)T\}^2}{2\sigma^2T}\right],\quad s>0.
+\end{equation}
+直方图用来观察整体形状，分位数比较则观察不同概率位置是否匹配。
+仅仅均值相同，并不能推出两个分布相同。
+
+\subsection{精确转移如何直接成为代码？}
+在相邻网格之间，式~\eqref{eq:gbm-log-exact} 给出
+\begin{equation}\label{eq:gbm-transition}
+ S_{n+1}=S_n\exp\bigl((\mu-\sigma^2/2)h+\sigma\Delta W_n\bigr),\qquad
+ \Delta W_n=\sqrt h Z_n.
+\end{equation}
+对应的单步代码就是：
+\begin{lstlisting}
+dw = np.sqrt(h) * rng.standard_normal(n_paths)
+s = s * np.exp((mu - 0.5 * sigma**2) * h + sigma * dw)
+\end{lstlisting}
+若只关心终值分布，可以一次生成 $W_T=\sqrt T Z$。
+但要比较数值方法的\emph{强误差}，精确终值必须使用数值方法所用的同一组增量之和，不能独立另抽一个 $Z$。
+“同分布”不等于“同一条随机路径”。
+
+\section{Euler--Maruyama 与 Milstein：公式为什么长这样？}\label{sec:methods}
+\subsection{Euler 的想法：在一步内冻结系数}
+考虑一维 SDE $dU_t=a(U_t)dt+b(U_t)dW_t$。
+它在一步上的积分形式是
+\begin{equation}\label{eq:methods-integral}
+ U_{t_{n+1}}=U_{t_n}+\int_{t_n}^{t_{n+1}}a(U_s)\,ds+
+ \int_{t_n}^{t_{n+1}}b(U_s)\,dW_s.
+\end{equation}
+用已知的左端值 $U_n$ 近似整个区间的状态：第一个积分变成 $a(U_n)h$，第二个变成 $b(U_n)\Delta W_n$。
+这样得到 Euler--Maruyama，简称 EM：
+\begin{equation}\label{eq:methods-em-general}
+ U_{n+1}=U_n+a(U_n)h+b(U_n)\Delta W_n.
+\end{equation}
+它继承普通 Euler 的“冻结系数”思路，但随机增量的大小是 $\sqrt h$，因此不能照搬 ODE 的全局误差阶数。
+GBM 的价格 EM 为
+\begin{equation}\label{eq:methods-em-gbm}
+ S_{n+1}^{E}=S_n^{E}\bigl(1+\mu h+\sigma\Delta W_n\bigr).
+\end{equation}
+
+\subsection{Milstein：把波动系数在一步内的变化也算进去}
+EM 把 $b(U_s)$ 直接替换成 $b(U_n)$，忽略了状态变化造成的噪声强度变化。
+一阶展开 $b(U_s)\approx b(U_n)+b'(U_n)(U_s-U_n)$，并在修正项里保留主要随机变化
+$U_s-U_n\approx b(U_n)(W_s-W_{t_n})$，得到额外项
+\begin{equation}\label{eq:methods-mil-integral}
+ b(U_n)b'(U_n)\int_{t_n}^{t_{n+1}}(W_s-W_{t_n})\,dW_s
+ =\frac12 b(U_n)b'(U_n)\bigl((\Delta W_n)^2-h\bigr).
+\end{equation}
+最后一个等式就是前面学习的 $\int W\,dW$ 公式在一个小区间上的版本。
+加入修正，得到标量 Milstein 方法：
+\begin{equation}\label{eq:methods-mil-general}
+ U_{n+1}=U_n+a(U_n)h+b(U_n)\Delta W_n
+ +\frac12b(U_n)b'(U_n)\bigl((\Delta W_n)^2-h\bigr).
+\end{equation}
+对 GBM，$b(s)=\sigma s$、$b'(s)=\sigma$，所以
+\begin{equation}\label{eq:methods-mil-gbm}
+ S_{n+1}^{M}=S_n^{M}\left[1+\mu h+\sigma\Delta W_n+
+ \frac12\sigma^2\bigl((\Delta W_n)^2-h\bigr)\right].
+\end{equation}
+修正项不是随意加入的经验项：它来自随机积分的二阶效应，且期望为零。
+
+还可以从 GBM 的精确乘子直接检查。把 $e^{(\mu-\sigma^2/2)h+\sigma\Delta W}$ 展开，保留 $h$、$\Delta W$ 和 $(\Delta W)^2$，恰好得到式~\eqref{eq:methods-mil-gbm} 的乘子。
+这里是按随机量的均方规模进行截断，不是认为所有路径上的余项都有同一个逐点界。
+
+\subsection{做一遍单步手算}
+取 $S_n=100$、$h=0.01$，这次正态抽样恰好为 $Z=1$，于是 $\Delta W=0.1$。
+三个更新结果为
+\begin{align}
+ S_{n+1}^{\mathrm{exact}}&=100e^{0.005(0.01)+0.3(0.1)}
+ \approx103.0506,\label{eq:methods-example-exact}\\
+ S_{n+1}^{E}&=100(1+0.05(0.01)+0.3(0.1))=103.05,\label{eq:methods-example-em}\\
+ S_{n+1}^{M}&=103.05+100(0.045)(0.1^2-0.01)=103.05.\label{eq:methods-example-mil}
+\end{align}
+这一次修正项恰好为零，因此 Milstein 与 EM 相同。
+若本次 $Z=0$，则精确值约为 $100.0050001$，EM 为 $100.05$，Milstein 为 $100.005$。
+这些例子说明公式如何使用，也说明不能凭一次抽样评价一个随机算法；阶数描述的是许多随机路径下的误差规律。
+
+\subsection{为什么要在价格上比较，而不在对数价格上比较？}
+GBM 对数方程的漂移和扩散都是常数。
+将 EM 用于它时，每一步积分本来就能精确计算，所以 EM 就是精确网格转移。
+它的 $b'(x)=0$，Milstein 修正也等于零。
+因此，在对数变量上画“EM 与 Milstein 的离散误差阶数”，理论误差已经为零，实验会主要看到舍入误差，不能验证半阶和一阶。
+题目特意要求在价格 $S$ 上比较，正是为了避免这一点。
+
+\subsection{正价格会不会变成负数？}
+精确解由指数给出，严格为正。价格 EM 的乘子为 $1+\mu h+\sigma\sqrt h Z$。
+只要 $\sigma>0$，正态分布的左尾无界，因此
+\begin{equation}\label{eq:methods-em-negative}
+ \Pr(S_{n+1}^{E}<0\mid S_n^{E}>0)
+ =\Phi\left(-\frac{1+\mu h}{\sigma\sqrt h}\right)>0.
+\end{equation}
+概率很小也不等于不可能。Milstein 的乘子可配方为
+\begin{equation}\label{eq:methods-mil-positive}
+ \frac12\sigma^2\left(\Delta W+\frac1\sigma\right)^2
+ +\frac12+\left(\mu-\frac12\sigma^2\right)h.
+\end{equation}
+它可能为负的条件是 $(\sigma^2-2\mu)h>1$。
+本实验 $\sigma^2-2\mu=-0.01$，所以这一参数组合下的 Milstein 对所有正步长都保持严格正值。
+这与“Milstein 对一般参数并非无条件保持正值”并不矛盾。
+
+现有 GBM 程序统计的是各网格的\emph{非正终值}数量（$S_N\le0$），没有逐一记录全部中间价格。
+终值没有负数，不能推出每一步都没有发生负值；更不能推出 EM 公式具有正值保证。
+将负值直接截成零会改变算法和分布，现有实现没有做这种截断。
+
+\section{强误差、弱误差与蒙特卡洛误差}\label{sec:errors}
+\subsection{两个不同的问题，对应两个不同的绝对值位置}
+固定终止时刻 $T$。记真值为 $S_T$，数值终值为 $S_T^{(h)}$。
+题目要求的强误差是终值 $L^1$ 误差：
+\begin{equation}\label{eq:errors-strong}
+ e_s(h)=\E\left[|S_T^{(h)}-S_T|\right].
+\end{equation}
+其中“强”强调在\emph{同一个随机驱动}下逐条路径比较。
+$L^1$ 表示取绝对值的一次方再求期望；另一种常见指标是均方根误差 $\sqrt{\E|S_T^{(h)}-S_T|^2}$，本题的表格没有使用后一种。
+本题也没有计算整条路径的最大误差 $\E[\sup_{0\le t\le T}|S_t^{(h)}-S_t|]$。
+
+给定一个观测函数 $\varphi$，弱误差是
+\begin{equation}\label{eq:errors-weak}
+ e_w(h;\varphi)=\left|\E[\varphi(S_T^{(h)})]-\E[\varphi(S_T)]\right|.
+\end{equation}
+它关心统计平均值。GBM 使用 $\varphi(s)=s$，非仿射实验使用 $\varphi(s)=(s-100)^+=\max(s-100,0)$。
+如果一半路径误差为 $+1$、另一半为 $-1$，则强误差为 1，而均值的弱误差为 0。
+因此 $\E|D|$ 与 $|\E D|$ 绝对不能交换。
+对 $\varphi(s)=s$，三角不等式还给出 $e_w\le e_s$，但弱误差小不能反推强误差小。
+
+\subsection{“半阶”与“一阶”具体意味着什么？}
+说 $e(h)=O(h^p)$，是说存在与足够小步长无关的常数 $C$，使 $e(h)\le Ch^p$。
+实际绘图时若出现 $e(h)\approx Ch^p$ 的渐近关系，就有
+\begin{equation}\label{eq:errors-order}
+ \log e(h)\approx\log C+p\log h,\qquad
+ p\approx\frac{\log(e(h)/e(h/2))}{\log2}.
+\end{equation}
+因此半阶对应步长减半、误差约乘 $1/\sqrt2$；一阶对应误差约减半。
+如果横轴改为步数 $N$，因为 $h=T/N$，斜率应变为 $-p$。
+
+在适当光滑性、Lipschitz 和矩条件下，EM 具有强半阶，标量 Milstein 具有强一阶。
+对合适的光滑测试函数，两者常具有弱一阶；这些是带假设的理论结论，不是所有 SDE 和所有收益函数都自动成立的口号。
+本题 GBM 系数线性光滑，适用标准理论；均值弱偏差还可以直接精确推导。
+
+半阶的一个直觉来自 EM 遗漏的二次随机项。每步 $(\Delta W)^2-h$ 的方差为 $2h^2$；
+累计 $N=T/h$ 个独立中心项，方差规模变成 $O(h)$，标准差规模是 $O(\sqrt h)$。
+状态相关权重会使严格证明更复杂，但这个估算解释了为何不能把每步随机误差都当成同方向确定误差。
+Milstein 恰好补上这类主要项；余项控制与误差传播给出强一阶。
+本讲义给出机制和本题所需推导，不把这个数量级估算冒充一般收敛定理的完整证明。
+
+\subsection{共同布朗路径：整个收敛实验最重要的设计}
+取最细步长 $\delta=T/N_f$，先生成每条路径的细增量 $\Delta W_j^{(\delta)}$。
+若粗步长 $h=r\delta$，定义
+\begin{equation}\label{eq:errors-coupling}
+ \Delta W_n^{(h)}=\sum_{j=nr}^{(n+1)r-1}\Delta W_j^{(\delta)}.
+\end{equation}
+独立正态的和仍为正态，方差是 $r\delta=h$；不重叠的和仍独立。
+这既保证每一个粗网格自己的分布正确，也保证粗细网格在公共时刻共享同一个 $W_t$。
+最简单的例子：细增量为 $(0.03,-0.01,0.02,0.04)$，合并相邻两步后得到 $(0.02,0.06)$，总和都是 $0.08$。
+
+如果粗网格和参考网格各自独立抽样，即使都已经算得很准，它们也在追踪不同随机路径。
+一个反例是仅模拟 $dU=dW$，两条独立终值差服从 $N(0,2T)$，所以
+\begin{equation}\label{eq:errors-independent-counterexample}
+ \E|W_T-\widetilde W_T|=2\sqrt{T/\pi},
+\end{equation}
+不会随步长趋于零。
+弱均值差用独立路径也可无偏估计，但通常噪声更大；共同随机数使两边的随机波动抵消。
+其方差恒等式是 $\Var(A-B)=\Var A+\Var B-2\Cov(A,B)$。
+同路径方案产生较高正相关时，这个设计显著降低差值的方差。
+
+\subsection{有限路径如何估计期望和置信区间？}
+对第 $i$ 条路径，计算
+\begin{equation}\label{eq:errors-observations}
+ A_i=|S_{T,i}^{(h)}-S_{T,i}^{\mathrm{ref}}|,\qquad
+ D_i=\varphi(S_{T,i}^{(h)})-\varphi(S_{T,i}^{\mathrm{ref}}).
+\end{equation}
+$A_i$ 用于强误差，$D_i$ 是\emph{有正负号}的弱偏差观测。
+下面对任意一组独立路径观测 $V_1,\ldots,V_M$ 写出统一的统计公式：
+\begin{align}
+ \overline V&=\frac1M\sum_{i=1}^M V_i,\label{eq:errors-sample-mean}\\
+ s_V^2&=\frac1{M-1}\sum_{i=1}^M(V_i-\overline V)^2,\label{eq:errors-sample-var}\\
+ \mathrm{SE}(\overline V)&=s_V/\sqrt M,\qquad
+ \mathrm{CI}_{95}\approx[\overline V-1.96\,\mathrm{SE},\ \overline V+1.96\,\mathrm{SE}].\label{eq:errors-ci}
+\end{align}
+样本标准差 $s_V$ 描述路径之间差异，标准误差 SE 描述平均值估计的精度。
+在有限方差、大样本等条件下，中心极限定理使这个正态近似区间合理。
+95\% 的含义是重复整个抽样过程时，所构造区间大约有 95\% 覆盖固定的真期望；不是已知这一次的随机误差小于区间半宽的确定保证。
+
+不同路径之间独立，是标准误差公式的基础；不同步长之间通过共同增量耦合，则彼此相关。
+因此图上的区间是\emph{逐点}区间，不能把每个网格点当成独立观测，直接套普通独立回归的斜率置信区间。
+原报告给出的斜率是描述性拟合，没有宣称这样的斜率区间。
+
+\subsection{抽样误差与时间偏差是两笔不同的账}
+令 $m_h=\E[\varphi(S_T^{(h)})]$，$m=\E[\varphi(S_T)]$，样本均值为 $\widehat m_h$。
+总差异可以分解为
+\begin{equation}\label{eq:errors-decomposition}
+ \widehat m_h-m=(\widehat m_h-m_h)+(m_h-m).
+\end{equation}
+前一项是蒙特卡洛抽样误差，增大 $M$ 可以减少；后一项是时间离散偏差，缩小 $h$ 才能改善。
+对固定 $h$，均方误差还有分解
+\begin{equation}\label{eq:errors-mse}
+ \E[(\widehat m_h-m)^2]=\frac{\Var(\varphi(S_T^{(h)}))}{M}+(m_h-m)^2.
+\end{equation}
+把 $M$ 增加四倍，标准误差通常只减半。
+如果参考本身是数值解，还要另加参考偏差这笔账；抽样区间不能自动覆盖它。
+
+当 $\overline D$ 的置信区间包含零时，当前样本还不能可靠分辨偏差符号。
+这不等于偏差确实为零，也不等于方法没有收敛；它意味着这批数据不足以支撑所希望的精细判断。
+此时把 $|\overline D|$ 取对数再拟合，很容易把噪声的起伏画成虚假的“阶数”。
+
+\subsection{GBM 的弱均值偏差可以完全解析计算}
+EM 的条件期望乘子为 $1+\mu h$。Milstein 的修正项期望为零，因此条件期望乘子也相同。
+利用当前状态与下一步增量独立，以及全期望公式，得到
+\begin{equation}\label{eq:errors-discrete-mean}
+ \E[S_N^{E}]=\E[S_N^{M}]=S_0(1+\mu h)^N,\qquad N=T/h.
+\end{equation}
+在当前参数下 $1+\mu h>0$。定义有符号偏差为“数值减精确”，展开对数：
+\begin{align}
+ b(h)&=S_0(1+\mu h)^{T/h}-S_0e^{\mu T},\label{eq:errors-bias-exact}\\
+ \frac{T}{h}\log(1+\mu h)&=\mu T-\frac12\mu^2Th+O(h^2),\label{eq:errors-bias-log}\\
+ b(h)&=-\frac12S_0e^{\mu T}\mu^2T\,h+O(h^2).\label{eq:errors-bias-order}
+\end{align}
+因此本实验两种方法的均值弱偏差相同，且渐近为一阶、方向为负。
+Milstein 路径更准确，不意味着所有观测量的弱偏差都比 EM 小。
+若 $\mu=0$，这里的均值偏差恰好为零，就无法用均值观测一阶非零偏差；这是参数退化的例子。
+
+在 $N=1024$ 时，解析偏差约为 $-0.000128325$。
+原始配对 EM 估计却是 $0.000715228$，其 95\% 区间约为 $[-0.000355660,0.001786117]$，包含零。
+这并不是理论算错了，而是抽样误差比目标偏差还大。
+现有程序为此加入独立预实验拟合的控制变量，使微小弱偏差能够在生产样本中被辨认。

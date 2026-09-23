@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "audit": "Independent NumPy recomputation from supplied saved endpoints and tables; original simulation modules are not imported",
+  "gbm_production_paths": 160000,
+  "nonaffine_production_paths": 100000,
+  "checks": [
+    "GBM saved coarse/fine strong and raw weak means/SEs, exact sample moments, quantiles, and terminal positivity",
+    "GBM analytic continuous moments and all discrete first/second moments via independent Gaussian quadrature",
+    "All 18 non-affine coarse/reference pairs and both reference refinements: strong and signed weak means, SEs, 95% intervals",
+    "All nine non-affine terminal asset/payoff means, SEs, 95% intervals, and saved terminal positivity",
+    "All six non-affine strong descriptive slopes and total path update accounting"
+  ],
+  "largest_absolute_differences": {
+    "GBM_exact_sample_mean_and_SE": 0.0,
+    "GBM_exact_sample_variance": 2.2737367544323206e-13,
+    "GBM_saved_endpoint_statistics": 6.661338147750939e-16,
+    "GBM_saved_quantiles": 0.0,
+    "GBM_analytic_continuous_moments": 2.2737367544323206e-13,
+    "GBM_discrete_moments_by_Gaussian_quadrature": 6.028130883350968e-09,
+    "NA_strong_statistics": 6.661338147750939e-16,
+    "NA_weak_statistics": 1.3877787807814457e-17,
+    "NA_terminal_asset_statistics": 1.1368683772161603e-13,
+    "NA_terminal_payoff_statistics": 1.2434497875801753e-14,
+    "NA_descriptive_slope": 4.440892098500626e-16
+  },
+  "limitations": [
+    "GBM controlled weak estimates cannot be recomputed from endpoint-only NPZ files; Brownian controls and production increments are not saved.",
+    "GBM nonpositive counts cover terminal values only. Positive terminal values do not rule out earlier negative steps.",
+    "Saved non-affine Brownian and intermediate-state diagnostics cannot be independently recomputed from terminal-only NPZ files.",
+    "These checks audit saved statistical consistency, not a fresh stochastic run or exact-solution error for the non-affine model."
+  ]
+}

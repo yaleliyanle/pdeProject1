@@ -1,49 +1,57 @@
-# Individual Challenge: quantitative positivity diagnostic
+# Tutorial 3 Individual Challenge: GBM strong-convergence figure
 
 ## Observation selected
 
-I used one of our own issue tickets: **“The positivity discussion was verbal; the simulated negative-terminal frequency was not reported explicitly.”** The original discussion derived when an Euler--Maruyama or Milstein update could be negative, but a reader could not see the actual count, denominator, frequency, or sampling resolution of the diagnostic.
+I used an issue identified in our own figure review:
 
-## Quantitative change
+> **The strong-convergence plot showed the data and theoretical guide lines, but it did not display fitted slopes with uncertainty bands, a claim title, units, or the round-off floor.**
 
-I audited `results/gbm_terminal_stats.csv`, which contains 16 method/grid rows: EM and Milstein on (N=8,16,32,64,128,256,512,1024), with 160,000 paths for every row.
+This is a concrete visualization issue and matches the Tutorial 3 requirement: one observation must be turned into one quantitative figure.
 
-- EM: (0/160{,}000=0.000\%) nonpositive terminal values at every grid.
-- Milstein: (0/160{,}000=0.000\%) nonpositive terminal values at every grid.
-- For zero events in 160,000 trials, the exact one-sided 95% binomial upper limit for the terminal frequency at any one method/grid is
-  
-  \[
-  1-0.05^{1/160000}=1.8723\times10^{-5}=0.0018723\%.
-  \]
-- For EM, the largest theoretical one-step negative probability in the tested grids occurs at (N=8):
-  
-  \[
-  \Phi\!\left(-\frac{1+\mu h}{\sigma\sqrt h}\right)
-  =1.1887\times10^{-21}.
-  \]
-  Thus zero observed events are consistent with the formula.
-- With the chosen parameters, the Milstein multiplier is strictly positive, so its theoretical one-step negative probability is zero.
+## Figure before improvement
 
-The saved diagnostic concerns terminal values only. It does not measure whether a path became negative at an intermediate step and subsequently returned to a positive terminal value. Therefore the result does not establish general positivity preservation for EM.
+Upload **figure_before_improvement.png**.
 
-## Before/after figure
+The original report figure already used log--log axes, pointwise Monte Carlo error bars, and theoretical order guides. Its limitations were that the fitted slope was not shown on the plot, no uncertainty band was attached to that slope, the title did not state a conclusion, the axes omitted units, and round-off was not discussed.
 
-Upload `positivity_before_after.png` to the Individual-Challenge Database.
+## Quantitative improvement
+
+The revised figure keeps the original production data and adds:
+
+1. fitted lines on the stated window $N=64,128,256,512,1024$;
+2. slope estimates with standard errors;
+3. 95% fitted-line bands based on 20 independent random seeds, with 20,000 paths per seed;
+4. theoretical order-$1/2$ and order-$1$ reference lines;
+5. a conclusion in the title, units on both axes, and a reproducibility note;
+6. an annotation showing that the round-off floor was not reached.
+
+The repeat experiment gave:
+
+- EM mean fitted slope: $0.498704$, standard error $0.000515$, 95% confidence interval $[0.497625,0.499782]$;
+- Milstein mean fitted slope: $0.993809$, standard error $0.000382$, 95% confidence interval $[0.993009,0.994609]$.
+
+These independent-seed results are close to the theoretical orders $1/2$ and $1$. Their narrow intervals describe repeat-to-repeat Monte Carlo variability on this fixed five-grid window; they do not include finite-step, fitting-window, or model-theory uncertainty. The exact theoretical values therefore need not lie inside these sampling intervals.
+
+The smallest production error was $1.53\times10^{-3}$, whereas the simple floating-point scale $\epsilon S_0$ is about $2.22\times10^{-14}$. The experiment therefore did not reach a round-off floor.
+
+Within each seed, all five grids aggregate the same 1024-step Brownian increments, so the strong-error comparison remains pathwise coupled. The uncertainty bands are formed from the spread of fitted lines across independent seeds, following the Tutorial 3 warning that a Monte Carlo claim requires repeats across seeds.
+
+## Figure after improvement
+
+Upload **figure_after_improvement.png**.
 
 Suggested caption:
 
-> **Before/after: GBM positivity diagnostic.** The original discussion described positivity verbally. The revised result reports the simulated count and denominator on all tested grids, adds an exact one-sided 95% upper limit for zero observed events, and checks consistency with the theoretical update probabilities. All saved terminal counts were (0/160{,}000); the diagnostic does not cover intermediate path values.
+> **GBM terminal strong convergence before and after quantitative review.** The improved log--log figure reports fitted slopes and independent-seed uncertainty bands on $N=64,128,256,512,1024$, together with theoretical order guides. Across 20 independent seeds of 20,000 paths, the EM slope was $0.4987\pm0.0005$ SE and the Milstein slope was $0.9938\pm0.0004$ SE. The minimum observed error remained about eleven orders of magnitude above $\epsilon S_0$, so no round-off floor was reached.
 
 ## Short database text
 
-> Observation: the positivity analysis was verbal and did not explicitly report the simulated negative-terminal frequency. I converted it into a quantitative diagnostic using the saved fixed-seed data. For both EM and Milstein, every tested grid (N=8,ldots,1024) had (0/160{,}000=0.000\%) nonpositive terminal values. The exact one-sided 95% upper limit for zero events at any one method/grid is (1.8723\times10^{-5}). The largest tested EM one-step negative probability is only (1.1887\times10^{-21}) at (N=8), while the Milstein multiplier is strictly positive for this parameter set. The result is limited to terminal values because intermediate GBM states were not saved.
+> Observation: our original GBM strong-convergence plot had log--log data and theoretical guides, but it did not show fitted-slope uncertainty or annotate round-off. I retained the original production results and added fitted lines, 95% bands from 20 independent seeds (20,000 paths per seed), units, a claim title, and a round-off annotation. On $N=64,128,256,512,1024$, EM gave slope $0.4987\pm0.0005$ SE and Milstein gave $0.9938\pm0.0004$ SE, close to theoretical orders $1/2$ and $1$. The smallest error was $1.53\times10^{-3}$, far above $\epsilon S_0\approx2.22\times10^{-14}$, so round-off was not reached. The confidence bands quantify seed-to-seed sampling variability on this fitting window.
 
-## Reproduce the figure
+## Reproduce the result
 
-From the project root:
+From the project root, run:
 
-```sh
-python3 individual_challenge/build_before_after.py
-```
+    python3 individual_challenge/build_convergence_before_after.py
 
-The script reads saved data only and does not rerun the SDE simulation.
+The script copies the original report figure as the before image, reads the saved production convergence table, runs the documented independent-seed repeat experiment, and writes the after image plus **convergence_repeat_results.json**.

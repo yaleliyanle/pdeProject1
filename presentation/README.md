@@ -13,6 +13,8 @@
 - `Financial_SDE_Numerical_Methods_Presentation.tex`：Beamer 源文件；
 - `Financial_SDE_Numerical_Methods_Presentation.pdf`：已编译的 16:9 幻灯片；
 - `Financial_SDE_Numerical_Methods_Presentation_EN.tex`：正式英文 Beamer 源文件；
+- `Financial_SDE_Numerical_Methods_Presentation_Editable.pptx`：可直接编辑的英文 PowerPoint 文件；
+- `generate_editable_pptx.js`：生成上述 PowerPoint 的可复现脚本；
 - `演讲提示.md`：完整版和短版的讲述顺序；
 - `assets/`：从项目现有结果中复制的矢量图。
 - `assets_en/`：英文演示使用的矢量图。

@@ -271,14 +271,22 @@ function addArrow(slide, x, y, w, h) {
     });
   addBodyText(slide, "From Euler–Maruyama to Nested-Grid Verification",
     1.5, 2.67, 10.33, 0.45, { fontSize: 19, color: C.teal, align: "center", bold: true });
-  addBodyText(slide, "Name: ____________________      Student ID: ____________________",
-    2.0, 3.55, 9.33, 0.42, { fontSize: 16, align: "center" });
+  addBodyText(slide, "Group Members", 2.0, 3.28, 9.33, 0.32, {
+    fontSize: 15.5, bold: true, align: "center", color: C.navy
+  });
+  addBodyText(slide,
+    "Member 1: ____________________    Student ID: ____________________\n" +
+    "Member 2: ____________________    Student ID: ____________________\n" +
+    "Member 3: ____________________    Student ID: ____________________\n" +
+    "Member 4: ____________________    Student ID: ____________________\n" +
+    "Member 5: ____________________    Student ID: ____________________",
+    2.0, 3.64, 9.33, 1.62, { fontSize: 13.5, align: "center", valign: "mid" });
   addBodyText(slide, "Numerical Partial Differential Equations",
-    2.0, 4.25, 9.33, 0.40, { fontSize: 16, align: "center", color: C.muted });
+    2.0, 5.52, 9.33, 0.34, { fontSize: 14, align: "center", color: C.muted });
   addBodyText(slide, "September 2026",
-    2.0, 4.82, 9.33, 0.40, { fontSize: 15, align: "center", color: C.muted });
+    2.0, 5.92, 9.33, 0.32, { fontSize: 13.5, align: "center", color: C.muted });
   slide.addShape(pptx.ShapeType.line, {
-    x: 3.6, y: 5.55, w: 6.13, h: 0, line: { color: C.teal, pt: 2 }
+    x: 3.6, y: 6.42, w: 6.13, h: 0, line: { color: C.teal, pt: 2 }
   });
 }
 

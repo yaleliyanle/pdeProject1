@@ -1,28 +1,17 @@
 {
-  "status": "DRAFT_NOT_READY_FOR_UPLOAD",
-  "human_completion_files": [
-    "report/individual_statements.tex",
-    "report/ai_transparency.tex",
-    "report/team_metadata.tex",
-    "slides/Financial_SDE_Submission_Slides.tex"
-  ],
-  "note": "Automated packaging does not verify personal declarations, signatures, or presentation rehearsal.",
+  "team": 6,
+  "status": "PACKAGED",
   "artifacts": [
     {
-      "name": "Financial_SDE_Report_DRAFT.pdf",
-      "bytes": 277935,
-      "sha256": "933c715c7f41ff8cec41cb43d3e526b99897dcc1434d36f46086d9d8b362cbbc"
+      "name": "Financial_SDE_Report.pdf",
+      "bytes": 279702,
+      "sha256": "c1aeeb4d5011f3e4fd619982372e1e2aba6972e77989bca786ac95dd2f776970"
     },
     {
-      "name": "Financial_SDE_Slides_DRAFT.pdf",
-      "bytes": 211354,
-      "sha256": "84fa999643c0862136a72be22d9fc59e6d9dc296a2d67367b286291f54742538"
-    },
-    {
-      "name": "Financial_SDE_Code_DRAFT.zip",
-      "bytes": 15672017,
-      "sha256": "7d26096271eda509202df25b03bec4fa0ccaff18b53bbe064ffdd8114dfe87f6"
+      "name": "Financial_SDE_Code.zip",
+      "bytes": 15498918,
+      "sha256": "952dbaac224b9b208b564b3a9b042a7384276f37c868620c44e40b7f84f07913"
     }
   ],
-  "zip_files": 93
+  "zip_files": 70
 }

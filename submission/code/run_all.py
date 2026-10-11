@@ -49,7 +49,7 @@ def main():
         subprocess.run([sys.executable,str(CODE/script),*extra],cwd=PROJECT,env=env,check=True)
     mode = "SMOKE TEST (not production evidence)" if args.smoke else "Production reproduction"
     print(f"\n{mode} complete. Artifacts: {output}")
-    print("Compile the report/slides LaTeX sources separately to refresh the PDF files.")
+    print("Compile the report LaTeX source separately to refresh its PDF.")
 
 
 if __name__ == "__main__":

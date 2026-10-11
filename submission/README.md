@@ -1,14 +1,15 @@
 # Financial SDE — Problem 4 submission package
 
-Technical revision: 11 October 2026. This is a **pre-submission draft** until the team confirms the number/membership, completes five individual contribution statements, and signs the AI intellectual-ownership declarations. The assistant did not invent roles or sign on behalf of students.
+Team 6: Yifan Chen (2362353), Zeya Hu (2362375), Yanle Li (2363600), Qingwen Ma (2361052), and Chenyi Xu (2359968).
 
-## Three items for upload
+## Deliverables
 
-1. Team report PDF, including the team AI Transparency Log and one labelled ICS per member.
+1. `Financial_SDE_Report.pdf`, including the team AI Transparency Log and one individual contribution statement per member.
 2. `Financial_SDE_Code.zip`, containing a portable folder with executable code, this README, tests, saved results and figure/report sources.
-3. One presentation PDF: 15 main slides for **10 minutes**, followed by four clearly marked Q&A/reference backup slides. The supplied checklist allows a further 3 minutes for questions.
 
-`report/report.tex` follows the supplied report template, specialised for the SDE exception on the first page of the problem pack. It does not add inapplicable RK4, ODE stability regions, Newton or adaptivity exercises. There is no upper page limit in the supplied submission checklist; the report exceeds the minimum eight pages and includes all required appendices.
+The presentation has been completed. This archive contains the report/code deliverables and excludes presentation files.
+
+`report/report.tex` follows the supplied report template, specialised for the SDE exception on the first page of the problem pack. Exact--EM--Milstein comparisons, strong and weak convergence, Monte Carlo uncertainty and nested-reference validation replace deterministic ODE stability and adaptivity analyses. The report includes the required transparency and individual-contribution appendices.
 
 ## Install and run on a fresh machine
 
@@ -53,7 +54,7 @@ python code/build_report_data.py
 python code/submission_experiments.py --figures-only
 ```
 
-The first command rebuilds report tables, numeric macros and production report plots. The second rebuilds the supplementary repeat/cost plots from saved JSON without remeasuring timing. The full `run_all.py` also regenerates the GBM histogram/quantile plot directly from simulated endpoints. All figure sources are included; report and slide graphics are vector PDFs with companion PNGs at least 240 DPI.
+The first command rebuilds report tables, numeric macros and production report plots. The second rebuilds the supplementary repeat/cost plots from saved JSON without remeasuring timing. The full `run_all.py` also regenerates the GBM histogram/quantile plot directly from simulated endpoints. All figure sources are included; report graphics are vector PDFs with companion PNGs at least 240 DPI.
 
 To typeset the supplied source with an existing TeX installation:
 
@@ -61,11 +62,9 @@ To typeset the supplied source with an existing TeX installation:
 cd report
 tectonic report.tex
 # Alternative: pdflatex report.tex twice
-cd ../slides
-tectonic Financial_SDE_Submission_Slides.tex
 ```
 
-The PDF deliverables are already compiled, so TeX is not required to read them or execute the Python experiments. After changing figures/data, recompile the sources; the code run deliberately does not assume that TeX is installed. Slide plot copies in `slides/assets/` must be refreshed from `figures/` after resimulation; `slides/NOTES_EN.md` identifies the narrative and timing. Do not submit an old PDF after editing its source.
+The report PDF is supplied separately, so TeX is not required to read it or execute the Python experiments. After regenerating figures or data, recompile the report source; the code run does not assume that TeX is installed.
 
 ## Reproduce each reported figure
 
@@ -102,22 +101,23 @@ Supplementary evidence: eight independent GBM seed runs with 5,000 production pa
 
 Cost is **kernel-only** median wall-clock latency for the NumPy price updates/product, including temporary allocations inside that kernel. It excludes RNG, Brownian aggregation, input/setup preparation, reference evaluation, imports, warm-up, summaries, plotting and file IO. The two selected methods satisfy the same tolerance but do not have identical achieved errors (about 8.3% apart in the supplied run). Timing is not reproducible bit-for-bit and is not a whole-workflow speedup claim.
 
-## Environment and provenance
+## Environment and reproducibility
 
-The historical production JSON/README records Windows, Python 3.12.14, NumPy 2.5.3, Matplotlib 3.11.1 and Numba 0.67.0. These are archived metadata, not a claim that the present audit independently verified those installations.
+The original production metadata records Windows, Python 3.12.14, NumPy 2.5.3, Matplotlib 3.11.1 and Numba 0.67.0. These recorded versions describe the original run rather than the environment used for cross-platform verification.
 
-The submission audit actually tested macOS arm64, Python 3.9.6, NumPy 2.0.2, Matplotlib 3.9.4 and Numba 0.60.0 in a clean virtual environment. Full production reruns reproduced the displayed scientific results. `requirements.txt` uses compatible ranges so a fresh interpreter can resolve suitable wheels; preserve versions/seeds/batch sizes if comparing exact realizations. Small platform-dependent floating-point changes and different wall-clock times are expected. Numerical verification uses tolerances, not identical file hashes.
+Cross-platform verification used macOS arm64, Python 3.9.6, NumPy 2.0.2, Matplotlib 3.9.4 and Numba 0.60.0 in a clean virtual environment. Full production reruns reproduced the displayed scientific results. `requirements.txt` uses compatible ranges so a fresh interpreter can resolve suitable wheels; preserve versions, seeds and batch sizes if comparing exact realizations. Small platform-dependent floating-point changes and different wall-clock times are expected. Numerical verification uses tolerances, not identical file hashes.
 
-`compliance/` contains the topic-specific requirement audit, automated review evidence (`CODE_REVIEW.md` and `code_audit_evidence.json`) and the actual Git-history snapshot. This snapshot uses the author label `Apple` and does not attribute work to five separate named students. No `.git` folder, local environment, cache or irrelevant coursework/tutorial material is needed to run this archive.
+The archive includes executable source, unit tests, saved results, figures, report source and the supplied problem pack. It excludes local environments, caches, repository metadata and internal preparation notes.
 
-## Before replacing DRAFT with final
+## Package the deliverables
 
-1. Confirm the five names/IDs and fill the team number in `report/team_metadata.tex` and the slide title macro.
-2. Each member must complete their own page in `report/individual_statements.tex`, using genuine files/functions/sections/commits and their own reflections.
-3. Collect the A4 intellectual-ownership signatures and confirmations in `report/ai_transparency.tex`; confirm other actual AI tools/assistance if any. Complete the human intra-team code review.
-4. Recompile both PDFs, rehearse the presentation within 10 minutes, and rebuild the ZIP from the final reviewed source using `python code/prepare_submission.py`.
+After compiling the report, run:
 
-The assistant's automated checks do not stand in for those human declarations. `prepare_submission.py` rejects the known incomplete markers by default; `--allow-draft` only creates explicitly draft review files.
+```sh
+python code/prepare_submission.py
+```
+
+This creates the report PDF and code ZIP in `upload/`, validates ZIP integrity, and records file sizes and SHA-256 checksums in `upload/manifest.json`. Report sources are checked for incomplete form markers and must not be newer than the compiled PDF.
 
 ## References
 

@@ -1,17 +1,31 @@
 # Problem 4 Financial SDE Coursework
 
-For the revised three-part submission package and the topic-specific checklist
-audit, see [submission/README.md](submission/README.md). The original 12-page
-report and historical experiment results below are preserved as a baseline.
-The revised report and slides are explicitly drafts until the real team number,
-five individual statements and member signatures are completed.
+The final Team 6 deliverables are [Financial_SDE_Report.pdf](submission/upload/Financial_SDE_Report.pdf)
+and [Financial_SDE_Code.zip](submission/upload/Financial_SDE_Code.zip).
+See [submission/README.md](submission/README.md) for reproduction instructions.
+The report includes the team AI Transparency Log and five individual contribution
+statements. The completed presentation and original 12-page report are preserved
+as historical project files; slides are not part of the current report/code package.
 
-This package follows the supplied 12-page coursework example: an English PDF report, editable LaTeX source, executable code, numerical results, and figures.
+The formal report has 27 pages, including the team AI Transparency Log and five individual contribution statements. The `submission/` directory contains the report source, portable Python code, tests, numerical results and figures.
 
-## Start here
+## Formal submission files
+
+- `submission/upload/Financial_SDE_Report.pdf` — Team 6 report and contribution statements.
+- `submission/upload/Financial_SDE_Code.zip` — reproducible code folder and README.
+- `submission/upload/manifest.json` — file sizes and SHA-256 checksums.
+- `submission/report/report.tex` — report source.
+- `submission/report/individual_statements.tex` — five completed contribution statements.
+- `submission/report/ai_transparency.tex` — team AI Transparency Log and declaration.
+
+For installation, reproduction, figure generation and compilation commands, use [submission/README.md](submission/README.md).
+
+## Historical numerical baseline
+
+The following root-level files document the original numerical baseline. They are retained as project history and are not the report/code files to upload.
 
 - Problem4_FinancialSDE_Coursework.pdf — compiled 12-page report.
-- Problem4_FinancialSDE_Coursework.tex — editable report source.
+- Problem4_FinancialSDE_Coursework.tex — original report source.
 - run_all.py — reproduce both experiments, validate the saved results, and rebuild report tables/plots.
 - gbm.py — exact GBM, price EM, and scalar Milstein, with an independent control-variate pilot.
 - nonaffine.py — coupled log-EM for the prescribed non-affine model, with three reference grids.
@@ -22,11 +36,9 @@ This package follows the supplied 12-page coursework example: an English PDF rep
 - figures/ — vector PDF and high-resolution PNG figures.
 - source/problem_pack.pdf — supplied assignment.
 
-The cover uses “Coursework Report”. The example author's name, student ID, and unrelated course number were not copied. To add your own details, edit the LaTeX author field and compile again.
+## Reproduce the historical baseline
 
-## Reproduce
-
-Tested with Python 3.12.14, NumPy 2.5.3, Matplotlib 3.11.1, and Numba 0.67.0 on Windows.
+The original production metadata records Python 3.12.14, NumPy 2.5.3, Matplotlib 3.11.1 and Numba 0.67.0 on Windows. The formal package README separately records the environment used for cross-platform verification.
 
 In a terminal opened in this directory:
 

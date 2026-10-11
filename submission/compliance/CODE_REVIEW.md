@@ -1,8 +1,26 @@
-# Pre-submission technical code audit
+# Final technical code review record
 
-This is an AI-assisted technical audit, not a signed intra-team human review.
-The members still need to record their own review and confirm their ownership.
-The machine-readable record is `code_audit_evidence.json` in this directory.
+This record combines the team-confirmed division of member review with the
+AI-assisted technical audit and automated verification. The numerical audit
+evidence is recorded in `code_audit_evidence.json`; the report's A4 and five
+individual statements record personal responsibilities. No signature or
+individual authorship is inferred from test results.
+
+## Confirmed member responsibilities
+
+| Member | Reviewed contribution |
+|---|---|
+| Yifan Chen (2362353) | Models, log-price transformation, EM/Milstein formulas, and strong/weak convergence interpretation. |
+| Zeya Hu (2362375) | GBM coupling and updates, independent-pilot controls, and moment/distribution checks. |
+| Yanle Li (2363600) | Correlated increments, simultaneous old-Y log-EM, nested grids, and numerical-reference interpretation. |
+| Qingwen Ma (2361052) | Figures, signed intervals, independent-seed rate variability, and common-accuracy kernel costs. |
+| Chenyi Xu (2359968) | Report consistency, reproduction commands, test/evidence distinctions, and archive organisation. |
+
+These responsibilities follow the confirmed work reflected in the individual
+statements. They do not assert that each member independently authored the
+whole implementation or personally performed the complete production rerun.
+The available Git history uses a shared `Apple` author label and is not
+evidence of separate personal commits.
 
 ## Actual tests
 
@@ -25,6 +43,9 @@ environment; NumPy and Matplotlib were inherited from system site-packages.
 - `python code/run_all.py --smoke` passed with all baseline/supplementary figures
   and report inputs. The same command, saved-run check, and unit tests passed
   from a separate copied package outside the source repository.
+- The final extracted ZIP passed all seven unit tests and saved-array
+  verification. ZIP integrity checks passed; the manifest records the two
+  final artifacts and the 70-file archive.
 
 The rerun agrees with the original terminal arrays to floating-point roundoff:
 GBM EM/Milstein endpoints are bit-identical, exact GBM differs by at most
@@ -32,20 +53,20 @@ GBM EM/Milstein endpoints are bit-identical, exact GBM differs by at most
 and the scientific interpretation are unchanged. Smoke results are execution
 tests, not production convergence evidence.
 
-## Findings fixed
+## Verified implementation properties
 
-| Severity | Location | Finding and resolution |
-|---|---|---|
-| Major | `code/nonaffine.py:79` | Invalid non-divisor grids could silently advance the wrong terminal time. Require a positive integer dividing the finest grid and test rejection. |
-| Major | `code/run_all.py:14` | The legacy artifact layout was not compatible with the required `code/` entry point. Add package-root resolution, explicit output roots, and isolated smoke runs. |
-| Minor | `requirements.txt` | Old exact pins did not describe this audit environment. Use compatible ranges and preserve historical production metadata. |
-| Minor | `code/gbm.py:114`, `code/nonaffine.py:127` | Missing time/price/density units. Label years, currency and inverse currency. |
+| Location | Verified property |
+|---|---|
+| `code/nonaffine.py:79` | The grid interface requires a positive integer dividing the finest grid exactly and rejects invalid counts and malformed increment arrays. |
+| `code/run_all.py:14` | The entry point resolves the package root, supports explicit output directories and isolated smoke runs, and operates from an extracted package outside the repository. |
+| `requirements.txt` | Compatible dependency ranges support installation; the documented audit environment and historical production metadata identify the versions used for each run. |
+| `code/gbm.py:114`, `code/nonaffine.py:127` | Time, price and density axes specify years, currency and inverse currency. |
 
-Keep the fixed seeds, common Brownian increments, independent CV pilot,
-unclipped prices, and explicit distinction between exact errors and finite
-reference discrepancies. These are strong features of the implementation.
+The implementation uses fixed seeds, common Brownian increments, an
+independent control-variate pilot and unclipped prices. Results distinguish
+exact GBM errors from differences against finite numerical references.
 
-## Checklist scope and remaining ownership
+## Review scope and scientific limits
 
 Problem Pack page 1 explicitly replaces the deterministic stability/adaptivity
 tasks for Direction 4. The required SDE oracle, price EM/Milstein comparison,
@@ -53,8 +74,16 @@ strong/weak errors, Monte Carlo uncertainty, and nested-grid validation were
 checked. We do not claim to have implemented deterministic RK4, Newton,
 absolute-stability regions, or an adaptive time controller.
 
-The kernels are model-specific and parameterized, not a fully generic swappable
-drift/diffusion solver. This limitation is stated rather than hidden behind a
-generic `f(t,y)` claim. Each member must still review the code, provide honest
-contribution evidence, and complete their own ICS/declaration/signature. The
-automated audit does not establish who authored or reviewed any artifact.
+The kernels are model-specific and parameterized, rather than a fully generic
+swappable drift/diffusion solver. The constant-volatility reduction tests the
+specified interface. Tests cover the documented protocol and do not establish
+correctness for every parameter setting or platform.
+
+Non-affine errors use finite numerical references; refinement differences do
+not certify the residual error against the exact solution. Monte Carlo
+intervals and repeated-seed slope variability exclude numerical-reference and
+fit-window bias. Fine-grid weak slopes are withheld when signed intervals
+contain zero. GBM negativity counts describe terminal prices. Cost timings
+cover the stated numerical kernels and exclude RNG, grid aggregation and other
+workflow costs. The AI-assisted production rerun and checks are evidence of
+technical reproduction, not proof of personal intellectual ownership.

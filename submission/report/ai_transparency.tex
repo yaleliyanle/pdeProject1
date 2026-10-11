@@ -1,17 +1,20 @@
 \section{Team AI Transparency Log}\label{app:ai}
-\textit{Adapted from Part A of the supplied ICS form. This is an evidence-based draft for collective confirmation, not a signed student declaration.}
+This log records the AI assistance used in the project, checks of significant scientific claims, and the team's intellectual-ownership responsibilities.
 
 \subsection*{A1. AI tools used}
+Table~\ref{tab:ai-tools} summarises the tools and their uses.
 \begin{table}[H]\centering\small
+\caption{AI assistance used during the project.}\label{tab:ai-tools}
 \begin{tabular}{p{3cm}p{4cm}p{7cm}}\toprule
 Tool & Version/date & Primary use\\\midrule
-OpenAI Codex & Exact model versions were not recorded. Current submission audit: 11 October 2026. & Derivations and explanations; implementation and automated verification; experiment execution; report, figures, slides and submission preparation.\\\bottomrule
+OpenAI Codex & September--October 2026; exact model versions were not recorded. & Derivations and explanations; implementation and automated verification; experiment execution; report, figures, presentation and documentation preparation.\\\bottomrule
 \end{tabular}
 \end{table}
-Earlier assistance is acknowledged in the original report. Routine formatting and language edits are included in this disclosure. The team should confirm other tools or assistance it actually used. Raw conversation transcripts are not appended; they remain in the originating chat and should be exported or supplied with a content hash if requested. No transcript archive or hash is claimed here.
+AI output was treated as material to check and interpret, not as an independent authority. Mathematical and implementation assistance are disclosed alongside language and formatting assistance. Raw conversation transcripts are not appended; no transcript archive or content hash is claimed.
 
 \subsection*{A2. Significant AI-assisted claim audits}
 \begin{table}[H]\centering\small
+\caption{Scientific claims, their assumptions and ways they could fail.}\label{tab:ai-audits}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{.8cm}>{\raggedright\arraybackslash}p{7cm}>{\raggedright\arraybackslash}p{6.8cm}@{}}\toprule
 Item & Claim, assumptions and material question & Risk and possible falsifier\\\midrule
 1 & Explain why the GBM EM and Milstein weak-mean curves overlap. Claim: both discrete means equal the expression in equation~\eqref{eq:discrete-mean} for deterministic initial data and independent centered Gaussian increments. & Confusing strong with weak order, omitting the centering of the Milstein term, or presenting the analytic curve as Monte Carlo output. A multiplier expectation different from $1+\mu h$ falsifies the identity.\\[2mm]
@@ -22,6 +25,7 @@ Item & Claim, assumptions and material question & Risk and possible falsifier\\\
 
 \subsection*{A3. Verification, decision and limitations}
 \begin{table}[H]\centering\small
+\caption{Checks supporting the claim audits in Table~\ref{tab:ai-audits}.}\label{tab:ai-checks}
 \begin{tabular}{@{}>{\raggedright\arraybackslash}p{.8cm}>{\raggedright\arraybackslash}p{7cm}>{\raggedright\arraybackslash}p{6.8cm}@{}}\toprule
 Item & Separate numerical check and evidence & Decision, modification and limitation\\\midrule
 1 & A direct conditional-expectation calculation in equations~\eqref{eq:conditional-em}--\eqref{eq:weak}; separate Gaussian-quadrature checks of discrete multiplier moments in \path{code/verify.py}; raw and controlled columns in \path{results/gbm_convergence.csv}. & Retain both curves. Explain their identical first-order mean bias rather than label the overlap a plot error. The statement applies to $\varphi(S)=S$ and $\mu\ne0$, not every payoff.\\[2mm]
@@ -29,22 +33,19 @@ Item & Separate numerical check and evidence & Decision, modification and limita
 3 & Eight independent-seed repetitions and kernel-cost measurement in \texttt{code/submission\_experiments.py}; recorded JSON/CSV and plots; pointwise production payoff intervals. & Add across-run rate variability and same-target cost evidence. Withhold a fine-grid weak-order claim. Seed spread excludes numerical-reference and fit-window bias; kernel timing excludes random-number generation and other costs.\\\bottomrule
 \end{tabular}
 \end{table}
-\noindent These are automated checks and separate implementations produced with AI assistance. They are not represented as an independent human audit. Each member must review the evidence, reproduce a relevant check and be able to explain it before signing A4.
+The checks in Table~\ref{tab:ai-checks} and the separate implementations were produced with AI assistance; they are not presented as an independent human audit. The team reviewed the formulas, implementation interfaces and interpretation according to the responsibilities in Table~\ref{tab:ownership} and the individual statements. Passing automated tests is distinguished from understanding or proving a mathematical claim.
 \newpage
 
-\subsection*{A4. Intellectual ownership declaration --- awaiting member completion}
-Each member must identify their actual contribution and trusted-library interface, and sign only after confirming that they can explain and modify team-owned methods, justify claims, and explain interface assumptions without AI during the viva. The assistant does not sign or affirm this on their behalf.
+\subsection*{A4. Intellectual ownership declaration}
+We affirm responsibility for the team-owned methods and claims described in this report. We can explain our contributions, justify the stated conclusions and limitations, and describe or modify the relevant methods without AI assistance during the viva. Trusted library operations are distinguished from the mathematical model and numerical choices owned by the team.
 \begin{table}[H]\centering\small
-\begin{tabular}{p{2.6cm}p{2.4cm}p{4.8cm}p{4.4cm}}\toprule
-Name & Signature/date & Actual team-owned contribution & Trusted dependency/interface\\\midrule
-Yifan Chen & \textit{Not supplied} & \textit{Member to complete} & \textit{Member to complete}\\[8mm]
-Zeya Hu & \textit{Not supplied} & \textit{Member to complete} & \textit{Member to complete}\\[8mm]
-Yanle Li & \textit{Not supplied} & \textit{Member to complete} & \textit{Member to complete}\\[8mm]
-Qingwen Ma & \textit{Not supplied} & \textit{Member to complete} & \textit{Member to complete}\\[8mm]
-Chenyi Xu & \textit{Not supplied} & \textit{Member to complete} & \textit{Member to complete}\\\bottomrule
+\caption{Individual responsibilities and trusted interfaces. The two lines in each signature cell are for signature and date, respectively.}\label{tab:ownership}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{1.7cm}>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}p{5.3cm}@{}}\toprule
+Name & Signature / date & Team-owned contribution & Trusted dependency/interface\\\midrule
+Yifan Chen & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Reviewed the models, log-price transformation, EM/Milstein formulas and strong--weak convergence interpretation. & Gaussian increment moments and scalar SDE calculus underpin the derivations; numerical library checks support, but do not replace, those calculations.\\[5mm]
+Zeya Hu & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked GBM coupling, update multipliers, independent-pilot controls and moment/distribution diagnostics. & NumPy normal sampling, array aggregation and products; their shapes, scaling and random-seed protocol are specified by the project.\\[5mm]
+Yanle Li & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked correlated increments, simultaneous log-EM, nested-grid construction and reference-sensitivity interpretation. & NumPy sampling and aggregation; Numba compilation of the EM kernel, with the recurrence and old-state conventions owned by the team.\\[5mm]
+Qingwen Ma & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Reviewed figures, signed confidence intervals, independent-seed rate variability and common-accuracy kernel costs. & NumPy statistical summaries, Matplotlib plotting and Python timing; the error metric, fit windows and timing boundary are explicit project choices.\\[5mm]
+Chenyi Xu & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked report consistency, reproduction commands, test/evidence distinctions and report/code archive organisation. & Python filesystem and ZIP interfaces and LaTeX typesetting; package paths, dependency instructions and document content are checked by the team.\\\bottomrule
 \end{tabular}
 \end{table}
-\noindent Relevant interfaces include NumPy normal sampling and aggregation, Numba compilation of the EM kernel, and Matplotlib figure generation. These are examples of dependencies to describe, not assigned member roles.
-
-\subsection*{Traceability caveat}
-The available Git history uses the single author label ``Apple''. It records artefact changes but does not establish which of the five students made each change. The archive includes a history snapshot for traceability. Individual statements must accurately connect contributions to files/functions/sections and genuine existing evidence; a shared commit label must not be reinterpreted as five named authors or replaced with invented retrospective commits.

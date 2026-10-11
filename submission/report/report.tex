@@ -29,7 +29,7 @@ frame=single,breaklines=true,showstringspaces=false,tabsize=4,captionpos=b}
 \input{../results/report_values.tex}
 \title{\textbf{Numerical Simulation of Financial SDEs}\\[2mm]
 \large Problem 4: GBM Benchmark and Non-Affine Volatility}
-\author{Team \#\TeamNumber\\[2mm]\small\TeamMembers\\[2mm]
+\author{Team \#\TeamNumber\\[2mm]\TeamMembers\\[2mm]
 \small Numerical Partial Differential Equations}
 \date{\SubmissionDate}
 \begin{document}
@@ -38,12 +38,6 @@ frame=single,breaklines=true,showstringspaces=false,tabsize=4,captionpos=b}
 This report compares exact simulation, Euler--Maruyama (EM), and scalar Milstein for geometric Brownian motion (GBM), then studies a non-affine stochastic-volatility model without an exact transition sampler. All resolution comparisons share Brownian paths through aggregation of fine increments. In GBM, the measured terminal strong slopes are \GBMEMRate{} for EM and \GBMMilRate{} for Milstein, consistent with orders one half and one. Both methods nevertheless have identical first-order bias in the terminal mean. Paired estimates, independently fitted control variates, and an analytic discrete-mean identity separate this bias from sampling noise. Histograms, quantiles, moments, and positivity diagnostics supply additional checks. For the prescribed non-affine model, simultaneous log-price EM produces positive prices, and three nested numerical references yield an empirical strong slope of \NARate{} on the stated fitting window. Fine-grid call-payoff differences have confidence intervals containing zero, so no resolved weak order is claimed. Independent-seed repetitions assess variability of fitted rates, while a measured kernel-cost study compares GBM methods at a common accuracy threshold. Numerical-reference agreement and sampling intervals remain evidence rather than exact-error bounds.
 \end{abstract}
 \noindent\textbf{Keywords:} SDE; Euler--Maruyama; Milstein; Monte Carlo; nested grids.
-\begin{formbox}
-\textbf{Pre-submission status.} The technical material is assembled for review.
-The team number, confirmed membership, individual contribution statements and
-member signatures must be completed before uploading this report. Empty fields
-are not declarations of contribution or intellectual ownership.
-\end{formbox}
 \newpage
 \tableofcontents
 \newpage
@@ -330,8 +324,8 @@ Accuracy and work have different components. Halving the time step roughly doubl
 
 The scope is limited to the stated parameters, horizon, terminal $L^1$ norm, path counts and fit windows. Positivity frequency diagnostics cover terminals for GBM, and all observed states for non-affine EM. We do not claim exact weak payoff errors, unconditional GBM positivity, or a scalar-Milstein rate for a noncommutative two-noise system. A useful next step is a larger paired payoff experiment with stronger reference resolution and variance reduction, followed by stress tests in higher-volatility regimes.
 
-\subsection*{Reproduction and human review status}
-The code archive includes fixed-seed source, saved arrays, numeric results, figure-generation scripts and machine/environment evidence. It supports full reproduction and isolated reduced smoke tests. AI assistance included derivations, explanations, implementation, numerical execution and document preparation. Appendix~\ref{app:ai} separates automated evidence from human intellectual-ownership declarations. The team must complete its own contribution statements and signed review before upload; this report does not assert that such review has occurred.
+\subsection*{Reproducibility and intellectual ownership}
+The code archive includes fixed-seed source, saved arrays, numeric results, figure-generation scripts and machine/environment evidence. It supports full reproduction and isolated reduced smoke tests. AI assistance included derivations, explanations, implementation, numerical execution and document preparation. Appendix~\ref{app:ai} records the significant claim audits and distinguishes automated verification from the team's responsibilities. Appendices~\ref{app:ics-2362353}--\ref{app:ics-2359968} record the members' individual contributions.
 
 \begin{thebibliography}{9}
 \bibitem{pack} \emph{Problem Pack: Five Suggested Directions for the ODE IVP Project}. Supplied coursework document, introductory SDE exception and Direction~4, pp.~6--7.
@@ -363,5 +357,5 @@ python -m unittest discover -s tests -v
 python code/run_all.py --smoke
 python code/run_all.py
 \end{lstlisting}
-Full reproduction regenerates production outputs and supplemental evidence. A smoke run is deliberately too small for scientific slope claims and writes to an isolated directory. The README records exact commands, dependency ranges, historical production versions and which cost components are excluded. The supplied report and slide PDFs do not require a local LaTeX installation merely to read them.
+Full reproduction regenerates production outputs and supplemental evidence. A smoke run is deliberately too small for scientific slope claims and writes to an isolated directory. The README records exact commands, dependency ranges, historical production versions and which cost components are excluded. The supplied report PDF does not require a local LaTeX installation merely to read it.
 \end{document}

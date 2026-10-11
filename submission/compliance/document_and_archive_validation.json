@@ -1,24 +1,32 @@
 {
-  "status": "TECHNICAL_PASS_HUMAN_DECLARATIONS_PENDING",
+  "status": "FINAL_ARTIFACTS_VALIDATED",
+  "validation_date": "2026-10-12",
   "report_pages": 27,
-  "slide_pages": 19,
-  "main_slides": 15,
-  "qa_slides": 4,
+  "team_number": 6,
+  "cover_name_row_font_size_pdf_points": [9.96264, 9.96264],
+  "cover_name_rows_same_font_size": true,
+  "presentation_status": "Completed according to the team; slides are historical archives and excluded from current packaging.",
   "report_unresolved_references": false,
   "report_overfull_boxes": false,
-  "slide_warnings": 0,
   "zip_integrity_pass": true,
-  "zip_has_slide_vector_assets": true,
+  "zip_excludes_slides": true,
   "zip_excludes_environments_and_git": true,
   "zip_outside_workspace_saved_array_verification": "PASS",
   "zip_outside_workspace_end_to_end_smoke": "PASS",
   "full_production_reproduction": "PASS; see code_audit_evidence.json",
   "unit_tests": 7,
   "compiled_report_remaining_warnings": "Underfull text boxes and an algorithm.sty comment-encoding warning; no missing output characters, undefined references, or overfull boxes.",
-  "human_blockers": [
-    "confirmed team number and membership",
-    "five actual ICS statements",
-    "member A4 signatures and declarations",
-    "human code review and presentation rehearsal"
-  ]
+  "contribution_statements": {
+    "count": 5,
+    "pages": [22, 23, 24, 25, 26],
+    "source": "report/individual_statements.tex",
+    "content_status": "FINAL",
+    "basis": "Individual review roles and actual contributions confirmed by the team"
+  },
+  "team_declaration_page": 21,
+  "signature_form": "Personal signature and date fields; this technical record does not authenticate signatures",
+  "document_placeholders_found": false,
+  "zip_files": 70,
+  "zip_excludes_internal_records_templates_and_archives": true,
+  "git_attribution_scope": "The shared repository author label is not treated as evidence of five distinct named commit authors"
 }

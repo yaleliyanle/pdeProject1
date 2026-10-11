@@ -1,0 +1,204 @@
+% ============================================================
+% ICS & AI Transparency Log
+% Compile: tectonic -X compile ICS.tex
+% ============================================================
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+
+\setmainfont{Times New Roman}
+\newcommand{\e}[1]{{\emojifont #1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\renewcommand{\arraystretch}{1.3}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries ICS \& AI Transparency Log}\\[0.4em]
+  {\large Appended to the end of the project report}
+\end{center}
+\vspace{0.2em}
+\hrule
+\vspace{0.6em}
+
+Two documents in one file:
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item \textbf{Part A --- Team AI Transparency Log} (part of rubric dimension E,
+    Writing, Presentation \& AI Transparency, 15\%). One log per team, filled in
+    collectively.
+  \item \textbf{Part B --- Individual Contribution Statement (ICS)}. One statement per
+    member, filled in individually.
+\end{itemize}
+
+% ============================================================
+\section*{Part A --- Team AI Transparency Log}
+% ============================================================
+\textbf{Purpose.} AI tools are \textbf{encouraged} --- this log is not a
+confession, it is a record of the gap between AI output and your understanding.
+A team that used AI extensively but can explain every modification earns full
+marks; a team that wrote everything by hand but cannot answer basic questions
+does not.
+
+\subsection*{A1. AI tools used}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{3.5cm}p{4.5cm}p{3.5cm}@{}}
+\toprule
+Tool & Version / Date & Primary use \\
+\midrule
+ & & \\
+ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{A2. Significant AI-assisted claim audits}
+Select two or three interactions that materially affected a mathematical claim,
+algorithm, experiment, or interpretation. Routine autocomplete and spelling
+corrections may be summarised once. Store raw transcripts separately; provide a
+link or content hash if requested rather than appending pages of raw output.
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{0.8cm}p{5.7cm}p{5.0cm}@{}}
+\toprule
+Item & Prompt / claim / assumptions & Risk and possible falsifier \\
+\midrule
+1 & & \\
+2 & & \\
+3 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{A3. Independent verification and decision}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{0.8cm}p{5.7cm}p{5.0cm}@{}}
+\toprule
+Item & Independent check and evidence location & Final decision / modification / limitation \\
+\midrule
+1 & & \\
+2 & & \\
+3 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+\emph{If you accepted an AI output unchanged, the independent check and its
+evidence are still required. Quality of audit matters; number of prompts does not.}
+
+\subsection*{A4. Intellectual ownership declaration}
+Each team member signs below, identifying what the team owns and the trusted
+dependencies it calls. Members affirm that they can explain and modify the
+team-owned numerical methods, justify the mathematical claims, and state the
+assumptions and tests at library interfaces without AI assistance during the
+viva. The viva may ask for a small live modification or diagnostic test.
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{2.4cm}p{2.4cm}p{4.0cm}p{3.2cm}@{}}
+\toprule
+Name & Signature & Team-owned artefact / contribution & Trusted dependency and interface \\
+\midrule
+ & & \\
+ & & \\
+ & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Example of a high-quality entry}
+\begin{quote}
+\textbf{Item 2: Adaptive step-size controller.}
+
+\textbf{Prompt:} ``Write a Python function for adaptive RK4 step-size control
+using embedded RK45 for the Van der Pol oscillator with $\mu = 1000$.''
+
+\textbf{AI output:} a 40-line function with a simple error estimate.
+
+\textbf{What we changed:} (1) replaced the fixed safety factor $S = 0.9$ with a
+PI-controller formula based on Hairer--N{\o}rsett--Wanner (1993) \S II.4;
+(2) added a stiffness detector that switches to implicit Euler after 3
+consecutive rejected steps; (3) replaced the AI's (incorrect) global error
+estimate with local error-per-step control.
+
+\textbf{Why:} the AI controller is a textbook template for non-stiff problems;
+for $\mu = 1000$ it took 42{,}000 steps vs.\ our 1{,}200 for $t \in [0, 50]$.
+\end{quote}
+
+% ============================================================
+\section*{Part B --- Individual Contribution Statement (ICS)}
+% ============================================================
+One page per member, appended after the AI Transparency Log. Purpose:
+accountability. The instructor reads these against the code (git history), the
+report, and the viva answers.
+
+\textbf{Not a team document.} Five different ICSs, five different voices. If two
+ICSs claim the same paragraph of code, the instructor will ask both of you about it.
+
+\subsection*{ICS format}
+\begin{verbatim}
+Individual Contribution Statement — Project 1 (ODE IVP)
+
+Name:
+Role this project:
+
+The specific things I did this project:
+1. [concrete item — e.g. ``Implemented the implicit Euler Newton solver in
+   methods.py; verified quadratic convergence'']
+2. [concrete item — e.g. ``Derived the stability region of RK4 in section 3.2
+   of the report; wrote the finite-difference check'']
+3. [concrete item — e.g. ``Wrote the log-log convergence script and the error
+   analysis in section 5'']
+
+What I would do differently:
+[1-3 sentences]
+
+Anything I should have asked for help with earlier:
+[honest reflection, optional but valuable]
+\end{verbatim}
+
+\subsection*{Rules}
+\begin{enumerate}[leftmargin=2.2em, itemsep=2pt]
+  \item \textbf{Be specific.} ``I worked on the report'' is not a contribution.
+    ``I wrote the stability section (3.2) including the derivation and the
+    figure'' is.
+  \item \textbf{Name files and functions.} The instructor will grep the git
+    history --- your claims should be traceable to commits you made.
+  \item \textbf{Be honest about the balance.} If you contributed less than your
+    teammates, say so and say why. Honest self-assessment is worth more to the
+    grade than inflated claims, which fail the viva.
+  \item \textbf{AI use is already declared in Part A.} Cross-reference your ICS
+    items to the Part A log entries where relevant.
+\end{enumerate}
+
+% ============================================================
+\section*{Instructor's use}
+% ============================================================
+\begin{itemize}[leftmargin=2em, itemsep=2pt]
+  \item \textbf{Part A:} assess the quality of the two or three claim audits:
+    assumptions, risk, independent verification, evidence location, decision,
+    and limitations. Do not reward prompt volume. A missing log caps rubric E
+    at 2; a concise, rigorous log can earn full marks.
+  \item \textbf{Part B:} cross-check claims against \texttt{git log} (who
+    committed which file).
+  \item In the final viva, ask each member to explain one thing \emph{outside}
+    their own role and perform a small modification or diagnostic test on
+    team-owned work. Ask what is delegated to libraries and how that interface
+    was tested.
+  \item The ICS, together with the viva and the issue-ticket record,
+    determines the $\pm$ adjustment to the project grade (see assessment
+    strategy in the teaching plan).
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,24 @@
+{
+  "status": "TECHNICAL_PASS_HUMAN_DECLARATIONS_PENDING",
+  "report_pages": 27,
+  "slide_pages": 19,
+  "main_slides": 15,
+  "qa_slides": 4,
+  "report_unresolved_references": false,
+  "report_overfull_boxes": false,
+  "slide_warnings": 0,
+  "zip_integrity_pass": true,
+  "zip_has_slide_vector_assets": true,
+  "zip_excludes_environments_and_git": true,
+  "zip_outside_workspace_saved_array_verification": "PASS",
+  "zip_outside_workspace_end_to_end_smoke": "PASS",
+  "full_production_reproduction": "PASS; see code_audit_evidence.json",
+  "unit_tests": 7,
+  "compiled_report_remaining_warnings": "Underfull text boxes and an algorithm.sty comment-encoding warning; no missing output characters, undefined references, or overfull boxes.",
+  "human_blockers": [
+    "confirmed team number and membership",
+    "five actual ICS statements",
+    "member A4 signatures and declarations",
+    "human code review and presentation rehearsal"
+  ]
+}

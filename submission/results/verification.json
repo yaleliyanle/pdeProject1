@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "deterministic_checks": true,
+  "saved_results_consistent": true,
+  "evidence": {
+    "gbm_paths": 160000,
+    "nonaffine_paths": 100000,
+    "nonaffine_finest_steps": 8192
+  }
+}

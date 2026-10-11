@@ -1,0 +1,190 @@
+% ============================================================
+% Visualization Style Guide — ODE IVP Project
+% Compile: tectonic -X compile visualization_guide.tex
+% ============================================================
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+
+\setmainfont{Times New Roman}
+\newcommand{\e}[1]{{\emojifont #1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\renewcommand{\arraystretch}{1.3}
+
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,
+        numbers=none,showstringspaces=false}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Visualization Style Guide}\\[0.4em]
+  {\large ODE IVP Project}
+\end{center}
+\vspace{0.2em}
+\hrule
+\vspace{0.6em}
+
+Applied to every figure that appears in the report or slides. The goal is not
+aesthetics for their own sake: \textbf{a figure is a piece of evidence}, and
+evidence must be legible, honest, and self-explanatory.
+
+% ============================================================
+\section*{Rules}
+% ============================================================
+
+\subsection*{1. Log-log for error-vs-step plots}
+When plotting error against step size $h$ (or $\Delta t$), use \textbf{logarithmic
+axes on both}. This is non-negotiable: the whole point is that order of
+convergence appears as a straight line whose slope you can read and compare to
+theory.
+
+\begin{lstlisting}[language=Python]
+ax.loglog(h_values, errors, "o-")
+# add the theoretical slope for comparison
+h_lin = np.logspace(-3, -1, 20)
+ax.loglog(h_lin, C * h_lin**1.0, "k--", label="order 1")
+\end{lstlisting}
+Always overlay the theoretical slope. An order-1 plot without the reference line
+is a claim without a benchmark.
+
+\textbf{Confidence band on the fitted line.} The slope is the claim; report it
+with its uncertainty. \texttt{np.polyfit} with \texttt{cov=True} returns the
+slope, its standard error, and the covariance the band is built from:
+
+\begin{lstlisting}[language=Python]
+coef, cov = np.polyfit(np.log(h_values), np.log(errors), 1, cov=True)
+slope, slope_err = coef[0], np.sqrt(cov[0, 0])
+lx = np.linspace(np.log(h_values.min()), np.log(h_values.max()), 50)
+line = coef[0]*lx + coef[1]
+se = np.sqrt(cov[1,1] + 2*lx*cov[0,1] + lx**2*cov[0,0])
+ax.loglog(np.exp(lx), np.exp(line), "k--", label="fit")
+ax.fill_between(np.exp(lx), np.exp(line - 1.96*se),
+                np.exp(line + 1.96*se), color="gray",
+                alpha=0.3, label="95% band")
+\end{lstlisting}
+
+A band only means something if the data is repeatable. A deterministic
+convergence table gives a \emph{narrow} band (a fit diagnostic); a Monte-Carlo
+claim needs repeats across seeds, and the spread across repeats is the honest
+band.
+
+\subsection*{2. Always label axes and units}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item Axis label: quantity (unit). E.g.\ \texttt{step size h [s]},
+    \texttt{global error [---]}.
+  \item Title: state what the figure shows AND what conclusion it supports.
+  \item Every figure gets a caption in the report that says what is shown and
+    why it matters. ``Figure 3. Convergence'' is not a caption.
+\end{itemize}
+
+\subsection*{3. Use colour responsibly}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item \textbf{Never use rainbow / \texttt{jet} colormaps.} They are illegible in
+    print and misleading (perceptually non-uniform). Use \texttt{viridis},
+    \texttt{plasma}, or categorical palettes (\texttt{tab10}).
+  \item Colourblind-safe pairs for overlaid curves: blue/orange, or use
+    linestyles + markers instead of relying on colour alone.
+  \item In error plots, use \texttt{o-} markers with lines, not bare markers.
+\end{itemize}
+
+\subsection*{4. Annotate the physics/math}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item Mark the interesting region (e.g.\ the $h$ at which stability kicks in)
+    with a vertical line or shaded patch, and label it.
+  \item If there is a round-off floor in a log-log plot, point at it: ``error
+    flattens at $h \approx 10^{-6}$ due to double-precision round-off''. That is
+    a \emph{finding}, not noise.
+\end{itemize}
+
+\subsection*{5. Reproducibility}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item Save every figure from \texttt{run\_all.py} with a fixed seed and fixed
+    file name: \texttt{fig05\_order\_euler.png}. No timestamps or
+    machine-specific junk in filenames.
+  \item $\mathrm{DPI} \geq 150$ for the report; $\geq 200$ for slides.
+  \item Every number quoted in the text must be reproducible from a figure or a
+    printed line in the code output.
+\end{itemize}
+
+\subsection*{6. Time-series sanity}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item For ODE solutions over time, always show a reference (analytic or
+    high-accuracy) when one exists.
+  \item When comparing integrators, use the SAME time axis and SAME line styles,
+    and a legend.
+\end{itemize}
+
+\subsection*{7. Cost--accuracy evidence (Learning Outcome D)}
+\begin{itemize}[leftmargin=2em, itemsep=1pt]
+  \item Plot \textbf{error versus cost}, not error versus nothing: the horizontal
+    axis is the \emph{measured} cost (wall time, right-hand-side evaluations,
+    Newton iterations, or accepted/rejected steps), the vertical axis the
+    achieved accuracy against your reference solution.
+  \item \textbf{Name the cost measure before you quote it.} ``Our implicit
+    method is faster'' is not a result; ``at a final-time error of $10^{-6}$,
+    implicit Euler took 0.8\,s and RK4 took 3.1\,s on the same machine'' is.
+  \item \textbf{Match the target first.} Bring both methods to the same error
+    level before comparing costs --- a fast method at a loose tolerance proves
+    nothing. State the target in the caption.
+  \item \textbf{Say what you did not count} (Jacobian assembly and
+    factorisation, setup, compilation, plotting) and hold it constant across the
+    methods being compared.
+  \item \textbf{The negative result is still a result.} If the method you
+    expected to win lost, plot it and say so --- that is a complete answer.
+\end{itemize}
+
+% ============================================================
+\section*{Checklist before you submit a figure}
+% ============================================================
+\begin{itemize}[leftmargin=2.4em, itemsep=1pt]
+  \item[$\square$] Log-log used where appropriate (error vs $h$, error vs $\Delta t$)
+  \item[$\square$] Axes labelled with units
+  \item[$\square$] Title states the conclusion, not just the content
+  \item[$\square$] Theoretical slope / reference overlaid where applicable
+  \item[$\square$] No rainbow colormap; colourblind-safe if colour-coded
+  \item[$\square$] All curves have a legend
+  \item[$\square$] Caption says what is shown AND why it matters
+  \item[$\square$] If costs are compared: cost measure named, accuracy target matched, both methods on one error-vs-cost plot
+  \item[$\square$] Reproducible from \texttt{run\_all.py} (fixed seed, fixed filename)
+  \item[$\square$] $\mathrm{DPI} \geq 150$
+\end{itemize}
+
+% ============================================================
+\section*{Anti-examples (what to avoid)}
+% ============================================================
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}p{3.2cm}p{5.5cm}p{2.5cm}@{}}
+\toprule
+Bad & Why & Good \\
+\midrule
+\texttt{plt.plot(h, err)} linear axes
+  & order-1 error looks like a boring flat curve; you can't read the slope
+  & log-log \\
+\texttt{plt.imshow(data, cmap="jet")}
+  & rainbow exaggerates differences, illegible
+  & \texttt{viridis} \\
+Error bar with only 1 run
+  & MC/statistical claims need repeats
+  & repeat with seeds, show spread \\
+Figure with no caption in the report
+  & reader can't tell what evidence it provides
+  & one-sentence takeaway per figure \\
+``Figure 4'' referenced but not discussed
+  & decorative figure
+  & either discuss it or delete it \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\end{document}

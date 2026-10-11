@@ -1,5 +1,11 @@
 # Problem 4 Financial SDE Coursework
 
+For the revised three-part submission package and the topic-specific checklist
+audit, see [submission/README.md](submission/README.md). The original 12-page
+report and historical experiment results below are preserved as a baseline.
+The revised report and slides are explicitly drafts until the real team number,
+five individual statements and member signatures are completed.
+
 This package follows the supplied 12-page coursework example: an English PDF report, editable LaTeX source, executable code, numerical results, and figures.
 
 ## Start here

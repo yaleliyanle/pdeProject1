@@ -2,9 +2,11 @@
 from pathlib import Path
 import csv
 import json
+import os
 import sys
-ROOT = Path(__file__).resolve().parent
-sys.path.insert(0,str(ROOT/".deps"))
+CODE = Path(__file__).resolve().parent
+ROOT = CODE.parent if CODE.name == "code" else CODE
+ROOT = Path(os.environ.get("FINANCIAL_SDE_OUTPUT_DIR", str(ROOT))).resolve()
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
@@ -27,6 +29,7 @@ def write(name,text):
 
 def table(name,caption,cols,headers,data):
     lines=[r"\begin{table}[H]\centering\small",r"\caption{"+caption+"}",
+           r"\label{tab:"+name.removesuffix("_table.tex").replace("_","-")+"}",
            r"\begin{tabular}{"+cols+r"}\toprule"," & ".join(headers)+r"\\\midrule"]
     lines += [" & ".join(map(str,row))+r"\\" for row in data]
     lines += [r"\bottomrule\end{tabular}",r"\end{table}"]
@@ -182,32 +185,40 @@ for name in colors:
     power=.5 if name=="EM" else 1
     ax.plot(h,y[-1]*1.45*(h/h[-1])**power,"--",color=colors[name],alpha=.55,
             label=f"Order {power:g} guide")
-ax.set(xscale="log",yscale="log",xlabel="Time step h",ylabel="Terminal strong L1 error")
+ax.set(xscale="log",yscale="log",xlabel="Time step h [years]",ylabel="Terminal strong L1 error [currency units]",
+       title="GBM: Milstein reduces pathwise error faster than EM")
 ax.legend(fontsize=9)
 ax.grid(alpha=.15)
 save(fig,"report_gbm_strong")
 
 fig,ax=plt.subplots(figsize=(6.5,3.1),layout="constrained")
+weak_resolved = all(r["weak_bias_cv"] + 1.96*r["weak_cv_se"] < 0 for r in rows)
 for name in colors:
     rr=[r for r in rows if r["method"]==name]
-    ax.errorbar([r["h"] for r in rr],[-r["weak_bias_cv"] for r in rr],
+    ax.errorbar([r["h"] for r in rr],[abs(r["weak_bias_cv"]) if weak_resolved else r["weak_bias_cv"] for r in rr],
                 yerr=[1.96*r["weak_cv_se"] for r in rr],fmt="o-" if name=="EM" else "s-",
                 mfc="white",capsize=2,color=colors[name],label=name+" with controls")
-ax.plot(h,[-r["analytic_mean_bias"] for r in rr],"k--",lw=1.1,label="Analytic mean bias")
-ax.set(xscale="log",yscale="log",xlabel="Time step h",ylabel="Mean bias magnitude")
+ax.plot(h,[abs(r["analytic_mean_bias"]) if weak_resolved else r["analytic_mean_bias"] for r in rr],"k--",lw=1.1,label="Analytic mean bias")
+analytic=np.array([abs(r["analytic_mean_bias"]) for r in rr])
+ax.plot(h,(1 if weak_resolved else -1)*analytic[-1]*1.35*h/h[-1],":",color="#555555",label="Order 1 guide")
+if not weak_resolved:
+    ax.axhline(0,color="#555555",linewidth=.8)
+ax.set(xscale="log",yscale="log" if weak_resolved else "linear",xlabel="Time step h [years]",ylabel=("Mean bias magnitude" if weak_resolved else "Signed mean bias")+" [currency units]",
+       title="GBM: both schemes have the same first-order mean bias")
 ax.legend(fontsize=9)
 ax.grid(alpha=.15)
 save(fig,"report_gbm_weak")
 
 fig,ax=plt.subplots(figsize=(6.5,3.55),layout="constrained")
-for reference,color in zip(a["simulation"]["reference_steps"],["#B99043","#5B8F6A","#276B98"]):
+for reference,color,marker in zip(a["simulation"]["reference_steps"],["#B99043","#5B8F6A","#276B98"],["^","s","o"]):
     rr=[r for r in a["convergence"] if r["reference_steps"]==reference]
     h=np.array([r["h"] for r in rr])
     y=np.array([r["strong_l1"]["mean"] for r in rr])
     ax.errorbar(h,y,yerr=[1.96*r["strong_l1"]["standard_error"] for r in rr],
-       marker="o",capsize=2,color=color,label=f"Reference 1/{reference}")
+       marker=marker,capsize=2,color=color,label=f"Reference 1/{reference}")
 ax.plot(h,y[0]*1.2*np.sqrt(h/h[0]),"--",color="#777777",label="Order 1/2 guide")
-ax.set(xscale="log",yscale="log",xlabel="Coarse time step h",ylabel="Terminal strong discrepancy")
+ax.set(xscale="log",yscale="log",xlabel="Coarse time step h [years]",ylabel="Terminal strong discrepancy [currency units]",
+       title="Non-affine EM: approximately half order against nested references")
 ax.legend(fontsize=8.5)
 ax.grid(alpha=.15)
 save(fig,"report_nonaffine_strong")
@@ -218,7 +229,8 @@ ax.errorbar(range(len(na)),[r["weak_payoff_difference"]["mean"] for r in na],
     fmt="o-",color="#276B98",capsize=4)
 ax.axhline(0,ls="--",color="#777777",lw=1)
 ax.set(xticks=range(len(na)),xticklabels=[f"1/{r['n_steps']}" for r in na],
-       xlabel="Coarse time step h",ylabel="Signed paired payoff difference")
+       xlabel="Coarse time step h [years]",ylabel="Signed paired payoff difference [currency units]",
+       title="Fine-grid payoff bias is unresolved by the sampling intervals")
 ax.grid(axis="y",alpha=.15)
 save(fig,"report_nonaffine_weak")
 print("Generated report values, 8 tables, and 4 report figures from saved results.")
@@ -254,4 +266,79 @@ summary_lines=[
     "See results/verification.json for independent checks and README.md for reproduction."
 ]
 (ROOT/"numerical_summary.txt").write_text("\n".join(summary_lines)+"\n",encoding="utf-8")
+
+# Supplementary evidence is kept separate from the historical production run.
+# These generated inputs keep the report and the saved measured values aligned.
+supplement_path = R / "submission_experiments.json"
+if supplement_path.exists():
+    extra = json.loads(supplement_path.read_text(encoding="utf-8"))
+    gb = extra["gbm_repeat_study"]
+    ns = extra["nonaffine_repeat_study"]
+    slope_rows = []
+    for method in ("EM", "Milstein"):
+        for metric in ("strong", "weak"):
+            stat = gb["slope_summary"][method][metric]
+            slope_rows.append(["GBM " + method + " " + metric,
+                num(stat["mean"], 4), num(stat["standard_deviation"], 4),
+                interval(stat["mean_slope_ci95_low"], stat["mean_slope_ci95_high"], 4)])
+    stat = ns["slope_summary"]
+    slope_rows.append(["Non-affine EM strong", num(stat["mean"], 4),
+        num(stat["standard_deviation"], 4),
+        interval(stat["mean_slope_ci95_low"], stat["mean_slope_ci95_high"], 4)])
+    repeat_text = (
+        f"{len(gb['repeats'])} independent-seed GBM runs use {gb['paths_per_repeat']:,} production paths and a separate "
+        f"{gb['independent_pilot_paths_per_repeat']:,}-path control pilot each, with the same $N=64,128,256,512,1024$ fit window. "
+        f"{len(ns['repeats'])} non-affine runs use {ns['paths_per_repeat']:,} paths each, the same $N=8,16,32,64$ window and "
+        "$N_{\\rm ref}=8192$. These are additional experiments, not replacements for the "
+        "160,000- and 100,000-path production studies.\\par\n"
+        r"\begin{table}[H]\centering\small" + "\n" +
+        r"\caption{Across-seed fitted-rate variability. Student-$t$ intervals concern the mean fitted slope under this fixed setup, not an exact theorem about the convergence order.}" + "\n" +
+        r"\label{tab:repeat-rates}\begin{tabular}{lrrr}\toprule" + "\n" +
+        r"Study & Mean slope & Seed SD & Approx. 95\% mean-slope CI\\\midrule" + "\n" +
+        "\n".join(" & ".join(row) + r"\\" for row in slope_rows) + "\n" +
+        r"\bottomrule\end{tabular}\end{table}" + "\n" +
+        r"\begin{figure}[H]\centering\includegraphics[width=.93\textwidth]{submission_gbm_repeat_slopes.pdf}" + "\n" +
+        r"\caption{Independent-seed GBM fits with theoretical guides. Shading is the empirical central 95\% spread of fitted curves across runs, not an independent-level regression band or a guaranteed confidence band. Strong and weak rates remain distinct.}\label{fig:gbm-repeat}\end{figure}" + "\n" +
+        r"\begin{figure}[H]\centering\includegraphics[width=.80\textwidth]{submission_nonaffine_repeat_slopes.pdf}" + "\n" +
+        r"\caption{Non-affine strong fits vary across independent seeds but remain near half order for the same numerical reference. This spread does not include the unknown reference bias.}\label{fig:na-repeat}\end{figure}" + "\n" +
+        "Table~\\ref{tab:repeat-rates} and Figures~\\ref{fig:gbm-repeat}--\\ref{fig:na-repeat} "
+        "show the reproducibility of the fitted-rate conclusions. Only a small number of repeats is used; "
+        "their empirical spread is descriptive. Coupled levels, finite fit windows and numerical "
+        "references can produce systematic effects not included in a seed-only interval. "
+        "In particular, Milstein's mean fitted strong slope is slightly below one and its "
+        "sampling-only interval excludes one. This reflects a finite-window fitted quantity; "
+        "it is not a confidence interval for the asymptotic theoretical order.\n")
+    write("submission_repeat_results.tex", repeat_text)
+    cost = extra["cost_accuracy_study"]
+    choices = cost["matched_target_choices"]
+    cost_rows = []
+    for method in ("EM", "Milstein"):
+        choice = choices[method]
+        er = choice["strong_error"]
+        cost_rows.append([method, str(choice["n_steps"]), num(er["mean"], 5),
+            interval(er["ci95_low"], er["ci95_high"], 5),
+            num(1000 * choice["median_seconds"], 3)])
+    cost_text = (
+        "Cost is measured wall-clock latency of the GBM NumPy update kernel, on the same "
+        f"pre-generated coupled Brownian paths after warm-up ({cost['paths']:,} paths; median of {cost['timing_repeats']} timings). The common target is terminal "
+        "$L^1$ error at most $0.25$ currency units. We select the coarsest tested grid "
+        "whose upper pointwise 95\\% error interval is below this target; the actual errors "
+        "need not be identical, and the tolerance overshoot is reported.\\par\n" +
+        r"\begin{table}[H]\centering\small" + "\n" +
+        r"\caption{GBM kernel costs at the common accuracy target. Both methods satisfy the same threshold; their measured errors and intervals are shown rather than assumed equal.}" + "\n" +
+        r"\label{tab:matched-cost}\begin{tabular}{lrrrr}\toprule" + "\n" +
+        r"Method & $N$ & Error & 95\% error CI & Median cost [ms]\\\midrule" + "\n" +
+        "\n".join(" & ".join(row) + r"\\" for row in cost_rows) + "\n" +
+        r"\bottomrule\end{tabular}\end{table}" + "\n" +
+        r"\begin{figure}[H]\centering\includegraphics[width=.93\textwidth]{submission_cost_accuracy.pdf}" + "\n" +
+        r"\caption{Measured kernel cost versus terminal strong error, using the same accuracy target and coupled paths. The target line prevents interpreting a cheap but inaccurate grid as a successful comparison.}\label{fig:cost}\end{figure}" + "\n" +
+        "Temporary allocations inside the price-update kernel are counted. Random-number generation, "
+        "Brownian aggregation, input preparation, import/setup, compilation, "
+        "statistical summaries, pilot fitting, verification and plotting are excluded from this "
+        "kernel-only measure and treated consistently across methods. Raw repeated timings "
+        "and the tested environment are recorded in \\texttt{results/submission\\_experiments.json}. "
+        "The comparison in Table~\\ref{tab:matched-cost} and Figure~\\ref{fig:cost} therefore "
+        "supports a specific implementation-level cost--accuracy conclusion, not an end-to-end "
+        "runtime or cross-machine speedup.\n")
+    write("submission_cost_results.tex", cost_text)
 

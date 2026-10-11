@@ -1,0 +1,16 @@
+.venv/
+venv/
+.deps/
+__pycache__/
+*.py[cod]
+.DS_Store
+*.aux
+*.log
+*.out
+*.toc
+*.nav
+*.snm
+*.vrb
+*.synctex.gz
+.pytest_cache/
+# Versioned results/ and figures/ intentionally remain reproducibility evidence.

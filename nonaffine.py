@@ -9,12 +9,15 @@ import csv
 from datetime import datetime, timezone
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import sys
 import time
 
-ROOT = Path(__file__).resolve().parent
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = SCRIPT_DIR.parent if SCRIPT_DIR.name == "code" else SCRIPT_DIR
+ROOT = Path(os.environ.get("FINANCIAL_SDE_OUTPUT_DIR", PROJECT_DIR)).resolve()
 sys.path.insert(0, str(ROOT / ".deps"))
 import numpy as np
 from numba import njit, __version__ as numba_version
@@ -75,7 +78,13 @@ def _em_kernel(increments, h, s0, y0, mu, kappa, theta, xi, g_min, g_max):
 
 def em_terminal(dw, n_steps, p):
     """Both updates use Y_n. All grids aggregate the same finest increments."""
+    if dw.ndim != 3 or dw.shape[2] != 2:
+        raise ValueError("dw must have shape (finest_steps, n_paths, 2)")
     finest, n_paths, _ = dw.shape
+    if not isinstance(n_steps, (int, np.integer)) or n_steps < 1 or finest % n_steps:
+        raise ValueError("n_steps must be positive and divide the finest grid exactly")
+    if n_paths < 1 or p["S0"] <= 0 or p["T"] <= 0:
+        raise ValueError("Require positive path count, initial price, and terminal time")
     ratio = finest // n_steps
     increments = dw if ratio == 1 else dw.reshape(n_steps,ratio,n_paths,2).sum(axis=1)
     h = p["T"]/n_steps
@@ -88,6 +97,15 @@ def em_terminal(dw, n_steps, p):
             x_max<math.log(np.finfo(np.float64).max)),
         all_terminal_assets_positive_finite=bool(np.isfinite(s).all() and (s>0).all()))
     return s,diagnostic
+
+
+def brownian_increments(rng, n_steps, n_paths, p):
+    """Generate two correlated drivers once, then aggregate them across grids."""
+    if n_steps < 1 or n_paths < 1 or p["T"] <= 0 or abs(p["rho"]) >= 1:
+        raise ValueError("Require positive sizes/time and abs(rho) < 1")
+    dw = rng.standard_normal((n_steps,n_paths,2))
+    dw[:,:,1] = p["rho"]*dw[:,:,0] + math.sqrt(1-p["rho"]**2)*dw[:,:,1]
+    return dw*math.sqrt(p["T"]/n_steps)
 
 
 def rate_fit(rows, key, steps):
@@ -106,7 +124,7 @@ def rate_fit(rows, key, steps):
         reason="Descriptive empirical slope against a finite reference, not exact error.")
 
 
-def draw_plots(summary):
+def draw_plots(summary, output_dir=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -115,10 +133,11 @@ def draw_plots(summary):
         "savefig.dpi":220, "axes.titleweight":"bold", "pdf.fonttype":42})
     rows = summary["convergence"]
     colors = dict(zip(REFERENCES, ("#d18c2e", "#639565", "#256ba5")))
+    artifact_root = ROOT if output_dir is None else Path(output_dir).resolve()
 
     def save(fig, stem):
         for ext in ("png","pdf"):
-            fig.savefig(ROOT/"figures"/f"{stem}.{ext}", bbox_inches="tight")
+            fig.savefig(artifact_root/"figures"/f"{stem}.{ext}", bbox_inches="tight")
         plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(8.4,5.4), layout="constrained")
@@ -130,8 +149,8 @@ def draw_plots(summary):
         ax.errorbar(h, err, yerr=ci, color=colors[ref], marker="o", lw=1.7,
                     ms=4, capsize=2, label=f"EM reference h = 1/{ref}")
     ax.plot(h, err[0]*1.3*np.sqrt(h/h[0]), "--", color="#98597e", label="Slope 1/2 guide")
-    ax.set(xscale="log", yscale="log", xlabel="Coarse step h",
-           ylabel=r"Coupled strong discrepancy $\mathbb{E}|S_h-S_{\rm ref}|$",
+    ax.set(xscale="log", yscale="log", xlabel="Coarse step h [years]",
+           ylabel=r"Coupled discrepancy $\mathbb{E}|S_h-S_{\rm ref}|$ [currency]",
            title="Non-affine SDE: terminal strong error")
     ax.set_xticks(h, [f"1/{n}" for n in COARSE])
     ax.invert_xaxis()
@@ -148,7 +167,7 @@ def draw_plots(summary):
                 marker="o", capsize=5, lw=1.7)
     ax.axhline(0, color="#98597e", ls="--", lw=1)
     ax.set(xticks=range(len(COARSE)), xticklabels=[f"1/{n}" for n in COARSE],
-           xlabel="Coarse step h", ylabel="Paired signed payoff difference",
+           xlabel="Coarse step h [years]", ylabel="Paired signed payoff difference [currency]",
            title="Non-affine SDE: weak error for call payoff")
     ax.grid(axis="y", alpha=.2)
     fig.supxlabel("Payoff max(S - 100, 0); reference 1/8192; pointwise paired 95% CIs.", fontsize=9)
@@ -160,7 +179,7 @@ def draw_plots(summary):
         yerr=[1.96*r["strong_l1"]["standard_error"] for r in refs],
         fmt="o-", color=colors[max(REFERENCES)], capsize=5)
     axes[0].set(xticks=[0,1], xticklabels=["2048 to 4096","4096 to 8192"],
-        ylabel=r"$\mathbb{E}|S_a-S_b|$", xlabel="Reference refinement (steps)",
+        ylabel=r"$\mathbb{E}|S_a-S_b|$ [currency]", xlabel="Reference refinement (steps)",
         title="Nested reference sensitivity", ylim=(0,None))
     mm = [summary["terminal_asset_mean"][str(n)] for n in REFERENCES]
     axes[1].errorbar(range(3), [m["mean"] for m in mm],
@@ -169,7 +188,7 @@ def draw_plots(summary):
     axes[1].axhline(summary["diagnostics"]["asset_expectation_target"],
         ls="--", color="#98597e", label=r"$100e^{0.05}$")
     axes[1].set(xticks=range(3), xticklabels=[f"1/{n}" for n in REFERENCES],
-        xlabel="Reference h", ylabel=r"Terminal asset mean", title="Implementation sanity check")
+        xlabel="Reference h [years]", ylabel=r"Terminal asset mean [currency]", title="Implementation sanity check")
     axes[1].legend(fontsize=9)
     for ax in axes:
         ax.grid(axis="y", alpha=.2)
@@ -191,11 +210,12 @@ def write_csv(path, rows, identifiers):
             writer.writerow(flat)
 
 
-def run(n_paths=100000, batch_size=512, seed=2026090804):
+def run(n_paths=100000, batch_size=512, seed=2026090804, output_dir=None):
     if n_paths < 2 or batch_size < 1:
         raise ValueError("Need at least 2 paths and a positive batch size")
+    artifact_root = ROOT if output_dir is None else Path(output_dir).resolve()
     for folder in ("results","figures"):
-        (ROOT/folder).mkdir(parents=True, exist_ok=True)
+        (artifact_root/folder).mkdir(parents=True, exist_ok=True)
     jit_t0 = time.perf_counter()
     em_terminal(np.zeros((1,1,2)),1,PARAMETERS)
     jit_warmup_seconds = time.perf_counter()-jit_t0
@@ -217,9 +237,7 @@ def run(n_paths=100000, batch_size=512, seed=2026090804):
     completed = 0
     while completed < n_paths:
         m = min(batch_size, n_paths-completed)
-        dw = rng.standard_normal((finest,m,2))
-        dw[:,:,1] = PARAMETERS["rho"]*dw[:,:,0] + math.sqrt(1-PARAMETERS["rho"]**2)*dw[:,:,1]
-        dw *= math.sqrt(hfinest)
+        dw = brownian_increments(rng,finest,m,PARAMETERS)
         if brownian is None:
             sample = dw.reshape(-1,2)
             cov = np.cov(sample, rowvar=False, ddof=1)
@@ -312,14 +330,14 @@ def run(n_paths=100000, batch_size=512, seed=2026090804):
     assert summary["diagnostics"]["total_path_updates"] == n_paths*sum(LEVELS)
     assert all(d["all_states_finite"] and d["all_asset_states_positive_finite"] and
                d["all_terminal_assets_positive_finite"] for d in state_diagnostics.values())
-    (ROOT/"results"/"nonaffine_summary.json").write_text(
+    (artifact_root/"results"/"nonaffine_summary.json").write_text(
         json.dumps(summary,indent=2,ensure_ascii=False),encoding="utf-8")
-    write_csv(ROOT/"results"/"nonaffine_convergence.csv",rows,
+    write_csv(artifact_root/"results"/"nonaffine_convergence.csv",rows,
         ("n_steps","h","reference_steps","reference_h"))
-    write_csv(ROOT/"results"/"nonaffine_reference_checks.csv",refs,("coarser_steps","finer_steps"))
-    np.savez_compressed(ROOT/"results"/"nonaffine_terminals.npz",
+    write_csv(artifact_root/"results"/"nonaffine_reference_checks.csv",refs,("coarser_steps","finer_steps"))
+    np.savez_compressed(artifact_root/"results"/"nonaffine_terminals.npz",
         **{f"S_{n}":s for n,s in terminal_samples.items()}, seed=seed, n_paths=n_paths)
-    draw_plots(summary)
+    draw_plots(summary,artifact_root)
     print(json.dumps(dict(elapsed_seconds=summary["simulation"]["elapsed_seconds"],
         finest_reference_rate_fits=fits[str(max(REFERENCES))],
         reference_residual_to_coarse_strong_ratio=ratios),indent=2),flush=True)
@@ -331,8 +349,10 @@ if __name__ == "__main__":
     parser.add_argument("--paths",type=int,default=100000)
     parser.add_argument("--batch-size",type=int,default=512)
     parser.add_argument("--seed",type=int,default=2026090804)
+    parser.add_argument("--output-dir",type=Path,default=ROOT,
+                        help="Artifact root containing results/ and figures/")
     args = parser.parse_args()
-    run(args.paths,args.batch_size,args.seed)
+    run(args.paths,args.batch_size,args.seed,args.output_dir)
 
 
 

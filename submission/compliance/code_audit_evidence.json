@@ -1,0 +1,67 @@
+{
+  "audit_date": "2026-10-11",
+  "review_type": "AI-assisted technical audit and automated tests; human intra-team review remains unconfirmed",
+  "status": "automated_checks_passed",
+  "tested_environment": {
+    "python": "3.9.6",
+    "numpy": "2.0.2",
+    "matplotlib": "3.9.4",
+    "numba": "0.60.0",
+    "platform": "macOS arm64",
+    "installation": "Isolated virtual environment; Numba installed there, NumPy and Matplotlib inherited from system site-packages"
+  },
+  "findings": [
+    {
+      "severity": "major",
+      "location": "code/nonaffine.py:79",
+      "before": "Some non-nested step counts silently advanced the wrong effective terminal time when finest//n_steps was 1",
+      "resolution": "Require a positive integer n_steps dividing the finest grid exactly; test invalid counts and malformed increment arrays"
+    },
+    {
+      "severity": "major",
+      "location": "code/run_all.py:14",
+      "before": "The legacy root-level layout was not compatible with the requested code/ entry point next to results/ and figures/",
+      "resolution": "Resolve the package root from the code directory, propagate an explicit artifact root, and test a separate copied package outside the repository"
+    },
+    {
+      "severity": "minor",
+      "location": "requirements.txt",
+      "before": "Exact dependency pins described the stored production run, not the environment used for the pre-submission verification",
+      "resolution": "Use compatible dependency ranges and explicitly record the versions actually tested without modifying historical production metadata"
+    },
+    {
+      "severity": "minor",
+      "location": "code/gbm.py:114 and code/nonaffine.py:127",
+      "before": "Several asset-price, quantile, density, and time axes lacked physical units",
+      "resolution": "Add currency, inverse-currency, and years labels without changing the numerical observations"
+    }
+  ],
+  "tests": {
+    "unittest_count": 7,
+    "unittest_status": "PASS",
+    "saved_data_checks": "PASS: original production arrays, all 18 non-affine coarse/reference rows and their SE/CIs, both reference-refinement rows, GBM coarse/fine raw statistics, analytic mean biases, and strong fitted slopes",
+    "legacy_smoke": "PASS: reduced GBM and non-affine runs, verification, table and figure regeneration in a separate temporary directory",
+    "packaged_smoke": "PASS: code/run_all.py --smoke with supplementary experiments and report-input generation",
+    "separate_copy_checks": "PASS: code/verify.py --no-write, all 7 unit tests, and code/run_all.py --smoke from an independently copied package outside the repository",
+    "full_production_reproduction": "PASS: GBM 160000 paths plus 20000 independent-pilot paths; non-affine 100000 paths with references 2048, 4096, 8192; all original production outputs preserved",
+    "smoke_limitation": "Reduced-path smoke runs validate execution only; their slopes and confidence intervals are not the submitted production evidence"
+  },
+  "cross_platform_terminal_comparison": {
+    "gbm_em_and_milstein_max_absolute_difference": 0.0,
+    "gbm_exact_max_absolute_difference": 5.684341886080802e-14,
+    "nonaffine_all_grids_max_absolute_difference": 3.694822225952521e-13,
+    "interpretation": "Floating-point roundoff only; report conclusions and displayed fitted slopes are unchanged"
+  },
+  "model_checks": {
+    "gbm": "Price-based EM and scalar Milstein, common Brownian increments, exact lognormal oracle, both discrete moments verified by Gaussian quadrature",
+    "nonaffine": "Prescribed parameters, simultaneous old-Y updates, stable logistic evaluation, correlated Gaussian drivers, nested aggregation, positive finite prices, constant-volatility reduction",
+    "control_variates": "Exactly centered Gaussian-tilt controls checked by independent quadrature; regression coefficients fitted on a separate pilot RNG seed",
+    "weak_error": "Signed payoff differences and pointwise Monte Carlo confidence intervals; unresolved non-affine weak slope is not claimed"
+  },
+  "remaining_human_requirements": [
+    "Each member must perform and own an intra-team code review",
+    "Confirm contribution statements against actual work and Git evidence",
+    "Provide real declarations and signatures; none are inferred from automated tests"
+  ],
+  "scope_limitation": "The kernels are deliberately model-specific and parameterized, not a generic swappable drift/diffusion framework. Deterministic RK4/Newton/adaptive-controller checks are not claimed and are replaced by the Direction 4 SDE requirements."
+}

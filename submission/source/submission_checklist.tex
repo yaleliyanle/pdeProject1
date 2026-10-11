@@ -1,0 +1,103 @@
+% ============================================================
+% Submission Checklist — End of Project (Tutorial 4)
+% Compile: tectonic -X compile submission_checklist.tex
+% ============================================================
+\documentclass[11pt]{article}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{fontspec}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+
+\setmainfont{Times New Roman}
+\newcommand{\e}[1]{{\emojifont #1}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Submission Checklist}\\[0.4em]
+  {\large End of Project (Tutorial 4)}
+\end{center}
+\vspace{0.2em}
+\hrule
+\vspace{0.6em}
+
+Go through this checklist in the last tutorial \emph{before} submitting. The
+instructor runs the same checks on a fresh machine.
+
+% ============================================================
+\subsection*{The three-part submission package}
+% ============================================================
+\begin{itemize}[leftmargin=2.4em, itemsep=1pt]
+  \item[$\square$] \textbf{Team report} --- PDF, $\geq$ 8 pages, including the
+  team AI Transparency Log and one labelled ICS per member as appendices
+  \item[$\square$] \textbf{Code} --- zip archive with a README
+  \item[$\square$] \textbf{Slides} --- PDF, one set for the scheduled presentation wave
+\end{itemize}
+
+% ============================================================
+\subsection*{Report checks}
+% ============================================================
+\begin{itemize}[leftmargin=2.4em, itemsep=1pt]
+  \item[$\square$] Title page with team number, member names, and student IDs
+  \item[$\square$] Structure is sensible, e.g.\ following the template:
+    Background $\to$ Model $\to$ Methods $\to$ Stability $\to$ Numerical
+    experiments $\to$ Conclusions
+  \item[$\square$] Every figure has a caption saying what is shown AND why it matters
+  \item[$\square$] Every claim has support (figure, table, or code output)
+  \item[$\square$] All equations render; stability regions correct for all 3 methods
+  \item[$\square$] Your numbers are checked against your own constructed oracle
+    (tight-tolerance scipy run, analytic special case, or conserved quantity)
+    --- and you state which
+  \item[$\square$] Observed order stated for at least 2 methods (log-log slope)
+  \item[$\square$] Cost measure stated and reported for a two-method comparison
+    at a \emph{matched} accuracy target (LO D)
+  \item[$\square$] Adaptive controller demonstrated (step size varies, tolerance respected)
+  \item[$\square$] Stiffness discussion if the topic is stiff (eigenvalue spread / ratio)
+  \item[$\square$] AI Transparency Log present (declare explicitly if no AI was used)
+  \item[$\square$] ICS included: each member's specific contributions, traceable to git
+  \item[$\square$] References cited where standard results are used
+\end{itemize}
+
+% ============================================================
+\subsection*{Code checks (run on a machine with dependencies installed)}
+% ============================================================
+\begin{itemize}[leftmargin=2.4em, itemsep=1pt]
+  \item[$\square$] \texttt{python code/run\_all.py} regenerates every figure in the report
+  \item[$\square$] README states: dependencies, how to run, how to reproduce each figure
+  \item[$\square$] No absolute paths that break on another machine
+  \item[$\square$] $f(t, y)$ is model-agnostic (swappable)
+  \item[$\square$] Seeds fixed for any random / Monte-Carlo elements
+  \item[$\square$] Generated figures are reproducible (no stale \texttt{.png} from an old run)
+  \item[$\square$] \texttt{.gitignore} excludes \texttt{.venv/}, \texttt{\_\_pycache\_\_/},
+    build artifacts
+\end{itemize}
+
+% ============================================================
+\subsection*{Slides checks}
+% ============================================================
+\begin{itemize}[leftmargin=2.4em, itemsep=1pt]
+  \item[$\square$] One PDF set for the scheduled presentation wave
+  \item[$\square$] The deck tells the full story arc (background $\to$ model $\to$ methods $\to$ experiments $\to$ conclusions)
+  \item[$\square$] Each slide has a takeaway, not just bullet points
+  \item[$\square$] Presentation fits the time limit (10 min + 3 min Q\&A)
+\end{itemize}
+
+% ============================================================
+\subsection*{Last sanity question}
+% ============================================================
+\begin{quote}
+If you were the instructor, would this submission convince you?
+
+If not, what is the weakest link --- and can you fix it in the next 30 minutes?
+\end{quote}
+Fix that first. A half-finished validation section is the most common reason a
+project grade drops.
+
+\end{document}

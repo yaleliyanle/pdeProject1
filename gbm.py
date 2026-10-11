@@ -8,13 +8,17 @@ import argparse
 import csv
 import json
 import math
+import os
 import platform
 from pathlib import Path
 from statistics import NormalDist
 import sys
 import time
 
-ROOT = Path(__file__).resolve().parent
+SCRIPT_DIR = Path(__file__).resolve().parent
+# In the submission archive, executable sources live in code/ beside artifacts.
+PROJECT_DIR = SCRIPT_DIR.parent if SCRIPT_DIR.name == "code" else SCRIPT_DIR
+ROOT = Path(os.environ.get("FINANCIAL_SDE_OUTPUT_DIR", PROJECT_DIR)).resolve()
 sys.path.insert(0, str(ROOT / ".deps"))
 import numpy as np
 
@@ -144,12 +148,12 @@ def make_figures(rows, samples, summary, output):
     for ax in axes:
         ax.set_xscale("log",base=2)
         ax.set_yscale("log")
-        ax.set_xlabel("Time step h")
+        ax.set_xlabel("Time step h [years]")
         ax.set_xticks(h[::2],[f"1/{int(round(1/x))}" for x in h[::2]])
         ax.legend(fontsize=8.5,loc="upper left")
         ax.grid(axis="y",alpha=.15,linewidth=.5)
-    axes[0].set_ylabel(r"Terminal strong error $E|S_T^h-S_T|$")
-    axes[1].set_ylabel(r"Mean bias magnitude $E[S_T]-E[S_T^h]$")
+    axes[0].set_ylabel(r"Terminal strong error $E|S_T^h-S_T|$ [currency]")
+    axes[1].set_ylabel(r"Mean bias $E[S_T]-E[S_T^h]$ [currency]")
     axes[0].set_title("(a) Strong convergence: 1/2 versus 1",loc="left")
     axes[1].set_title("(b) First-order weak error for f(s) = s",loc="left")
     fig.suptitle(f"GBM | {summary['paths']:,} coupled paths; error bars: 95% Monte Carlo CI",fontsize=12)
@@ -171,11 +175,11 @@ def make_figures(rows, samples, summary, output):
         ax.plot(t,exact[i],color=colors["Exact"],linewidth=1.2,label="Exact")
         ax.plot(tc,em[i],"o--",color=colors["EM"],linewidth=.85,markersize=2.5,label="EM")
         ax.plot(tc,mil[i],"s:",color=colors["Milstein"],linewidth=.95,markersize=2.2,label="Milstein")
-        ax.set_xlabel("Time t")
+        ax.set_xlabel("Time t [years]")
         ax.set_title(f"({chr(97+i)}) Coupled path {i+1}",loc="left")
-    axes[0].set_ylabel("Asset price S(t)")
+    axes[0].set_ylabel("Asset price S(t) [currency]")
     axes[-1].legend(loc="best",fontsize=8)
-    fig.suptitle("Exact GBM and numerical price paths | coarse time step h = 1/32",fontsize=12)
+    fig.suptitle("Exact GBM and numerical price paths | h = 1/32 year",fontsize=12)
     save(fig,"gbm_paths")
 
     fig,axes=plt.subplots(1,2,figsize=(10.2,4.0),constrained_layout=True)
@@ -189,9 +193,9 @@ def make_figures(rows, samples, summary, output):
     z=(np.log(x/S0)-(MU-.5*SIGMA**2)*T)/(SIGMA*math.sqrt(T))
     density=np.exp(-.5*z*z)/(x*SIGMA*math.sqrt(2*math.pi*T))
     axes[0].plot(x,density,color="#222222",linestyle="--",linewidth=1.1,label="Exact lognormal density")
-    axes[0].set_xlabel("Terminal price")
-    axes[0].set_ylabel("Probability density")
-    axes[0].set_title("(a) Terminal distributions, h = 1/8",loc="left")
+    axes[0].set_xlabel("Terminal price [currency]")
+    axes[0].set_ylabel("Probability density [1/currency]")
+    axes[0].set_title("(a) Terminal distributions, h = 1/8 year",loc="left")
     axes[0].legend(fontsize=8)
     probs=np.linspace(.001,.999,199)
     nd=NormalDist()
@@ -200,20 +204,23 @@ def make_figures(rows, samples, summary, output):
         axes[1].plot(theoretical,np.quantile(samples[name],probs),color=colors[name],
             linewidth=1.25,linestyle={"Exact":"-","EM":"--","Milstein":":"}[name],label=name)
     axes[1].plot(theoretical,theoretical,color="#666666",linewidth=.8,linestyle="-.",label="Identity")
-    axes[1].set_xlabel("Exact lognormal quantiles")
-    axes[1].set_ylabel("Empirical terminal quantiles")
+    axes[1].set_xlabel("Exact lognormal quantiles [currency]")
+    axes[1].set_ylabel("Empirical terminal quantiles [currency]")
     axes[1].set_title("(b) Quantile comparison, p = .001 to .999",loc="left")
     axes[1].legend(fontsize=8)
     fig.suptitle("Distribution sanity check | all simulated endpoints included",fontsize=12)
     save(fig,"gbm_distribution")
 
 
-def run(paths,pilot_paths,batch_size):
+def run(paths,pilot_paths,batch_size,output_dir=None):
     import matplotlib
+    if paths < 2 or pilot_paths < 20 or batch_size < 1:
+        raise ValueError("Require paths >= 2, pilot_paths >= 20, batch_size >= 1")
     start=time.perf_counter()
-    results,figures=ROOT/"results",ROOT/"figures"
-    results.mkdir(exist_ok=True)
-    figures.mkdir(exist_ok=True)
+    artifact_root = ROOT if output_dir is None else Path(output_dir).resolve()
+    results,figures=artifact_root/"results",artifact_root/"figures"
+    results.mkdir(parents=True,exist_ok=True)
+    figures.mkdir(parents=True,exist_ok=True)
     log_lines=[]
     def log(text):
         print(text,flush=True)
@@ -361,7 +368,7 @@ def run(paths,pilot_paths,batch_size):
     summary["runtime_seconds"]=time.perf_counter()-start
     (results/"gbm_summary.json").write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding="utf-8")
     log(json.dumps({"slopes":slopes,"exact_moments":summary["exact_terminal_moments"],"checks":summary["checks"]},ensure_ascii=False,indent=2))
-    log(f"Completed in {summary['runtime_seconds']:.1f}s; figures and CSV/JSON saved under {ROOT}")
+    log(f"Completed in {summary['runtime_seconds']:.1f}s; figures and CSV/JSON saved under {artifact_root}")
     (results/"gbm_run.log").write_text("\n".join(log_lines)+"\n",encoding="utf-8")
     assert summary["checks"]["all_finite"],"Non-finite simulation results"
     assert summary["checks"]["strong_errors_decrease"],"Strong errors fail to decrease"
@@ -373,8 +380,10 @@ if __name__=="__main__":
     parser.add_argument("--paths",type=int,default=160000)
     parser.add_argument("--pilot-paths",type=int,default=20000)
     parser.add_argument("--batch-size",type=int,default=2000)
+    parser.add_argument("--output-dir",type=Path,default=ROOT,
+                        help="Artifact root containing results/ and figures/")
     args=parser.parse_args()
     if args.paths<2 or args.pilot_paths<20 or args.batch_size<1:
         parser.error("Require paths >= 2, pilot-paths >= 20, batch-size >= 1")
-    run(args.paths,args.pilot_paths,args.batch_size)
+    run(args.paths,args.pilot_paths,args.batch_size,args.output_dir)
 

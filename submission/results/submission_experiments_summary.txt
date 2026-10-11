@@ -1,0 +1,16 @@
+Supplementary submission evidence: independent-seed repeats and common-tolerance cost
+Slope uncertainty below is sampling repeatability, not reference/window uncertainty.
+GBM EM strong: mean slope 0.50028502, seed SD 0.00832055, approximate mean-slope 95% CI [0.49332894, 0.50724111]
+GBM EM weak: mean slope 0.99867012, seed SD 0.00606664, approximate mean-slope 95% CI [0.99359833, 1.00374191]
+GBM Milstein strong: mean slope 0.99281274, seed SD 0.00316209, approximate mean-slope 95% CI [0.99016920, 0.99545628]
+GBM Milstein weak: mean slope 1.00034378, seed SD 0.00292052, approximate mean-slope 95% CI [0.99790219, 1.00278538]
+Non-affine strong: mean slope 0.49837087, seed SD 0.01738872, approximate mean-slope 95% CI [0.48383368, 0.51290805]; finite reference N=8192.
+Common terminal L1 tolerance: 0.25 currency; same 10000 paths; median of 7 kernel timings.
+EM: N=512, strong error 0.23566122, 95% MC CI [0.23176508, 0.23955735], median kernel seconds 0.008531750; path updates 5120000
+Milstein: N=6, strong error 0.21604982, 95% MC CI [0.21086890, 0.22123074], median kernel seconds 0.000138875; path updates 60000
+EM/Milstein matched-tolerance median kernel-cost ratio: 61.434743
+Achieved-error absolute difference / EM error: 8.322%
+The discrete grids achieve different errors below the same tolerance.
+Cost excludes RNG, Brownian aggregation, reference evaluation, setup/warmup, statistics, plotting and file IO.
+Cost includes kernel arithmetic, temporary allocation and product reduction; no JIT compilation in NumPy GBM kernel.
+Wall-clock cost is machine dependent and not an end-to-end workflow speedup.

@@ -1,8 +1,8 @@
 """Supplementary independent-seed and matched-target cost experiments.
 
 This is not a replacement for the production experiments in gbm.py/nonaffine.py.
-Run from the submitted code folder: python submission_experiments.py
-Regenerate only figures: python submission_experiments.py --figures-only
+Run from the package root: python code/submission_experiments.py
+Regenerate only figures: python code/submission_experiments.py --figures-only
 Every stochastic study has fixed seeds. Wall-clock times are machine-dependent.
 """
 from __future__ import annotations

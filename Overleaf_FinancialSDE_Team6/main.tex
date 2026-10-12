@@ -1,0 +1,361 @@
+% Adapted from the supplied latex_report_template.tex for Problem Pack Direction 4.
+% The pack explicitly replaces deterministic ODE stability/adaptivity requirements.
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{graphicx,booktabs,listings,xcolor,enumitem,float,caption,subcaption,array}
+\usepackage[hidelinks]{hyperref}
+\usepackage{algorithm,algpseudocode,mdframed,microtype}
+\definecolor{lecture}{RGB}{70,130,180}
+\definecolor{seminar}{RGB}{205,92,92}
+\definecolor{formbg}{RGB}{250,250,245}
+\definecolor{formframe}{RGB}{180,170,140}
+\newmdenv[backgroundcolor=formbg,linecolor=formframe,linewidth=0.8pt,
+roundcorner=3pt,innerleftmargin=8pt,innerrightmargin=8pt,
+innertopmargin=8pt,innerbottommargin=8pt]{formbox}
+\newtheorem{proposition}{Proposition}[section]
+\algrenewcommand{\algorithmicrequire}{\textbf{Input:}}
+\algrenewcommand{\algorithmicensure}{\textbf{Output:}}
+\lstset{language=Python,basicstyle=\ttfamily\scriptsize,
+keywordstyle=\color{blue}\bfseries,commentstyle=\color{green!40!black},
+stringstyle=\color{red!70!black},numbers=left,numberstyle=\tiny\color{gray},
+frame=single,breaklines=true,showstringspaces=false,tabsize=4,captionpos=b}
+\captionsetup{font=small}
+\setcounter{tocdepth}{1}
+\graphicspath{{figures/}}
+\input{team_metadata.tex}
+\input{results/report_values.tex}
+\title{\textbf{Numerical Simulation of Financial SDEs}\\[2mm]
+\large Problem 4: GBM Benchmark and Non-Affine Volatility}
+\author{Team \#\TeamNumber\\[2mm]\TeamMembers\\[2mm]
+\small Numerical Partial Differential Equations}
+\date{\SubmissionDate}
+\begin{document}
+\maketitle
+\begin{abstract}
+This report compares exact simulation, Euler--Maruyama (EM), and scalar Milstein for geometric Brownian motion (GBM), then studies a non-affine stochastic-volatility model without an exact transition sampler. All resolution comparisons share Brownian paths through aggregation of fine increments. In GBM, the measured terminal strong slopes are \GBMEMRate{} for EM and \GBMMilRate{} for Milstein, consistent with orders one half and one. Both methods nevertheless have identical first-order bias in the terminal mean. Paired estimates, independently fitted control variates, and an analytic discrete-mean identity separate this bias from sampling noise. Histograms, quantiles, moments, and positivity diagnostics supply additional checks. For the prescribed non-affine model, simultaneous log-price EM produces positive prices, and three nested numerical references yield an empirical strong slope of \NARate{} on the stated fitting window. Fine-grid call-payoff differences have confidence intervals containing zero, so no resolved weak order is claimed. Independent-seed repetitions assess variability of fitted rates, while a measured kernel-cost study compares GBM methods at a common accuracy threshold. Numerical-reference agreement and sampling intervals remain evidence rather than exact-error bounds.
+\end{abstract}
+\noindent\textbf{Keywords:} SDE; Euler--Maruyama; Milstein; Monte Carlo; nested grids.
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction and motivation}\label{sec:introduction}
+Asset prices are driven by both systematic growth and random shocks. Numerical SDE methods must therefore approximate random paths and expectations, rather than only one deterministic trajectory. We chose this direction because GBM provides an exact benchmark for checking an implementation, whereas non-affine volatility requires a numerical reference. The contrast exposes what a convergence plot can establish and what remains uncertain \cite{pack,higham,kloeden}.
+
+\subsection{Interpreting the assignment}
+The first page of the supplied problem pack explicitly specialises the generic ODE project brief for Direction~4. Exact--EM--Milstein comparison, strong and weak convergence with coupled paths, Monte Carlo uncertainty, and non-affine nested-grid validation replace deterministic stability-region and adaptive-step analyses. Consequently RK4, implicit-Euler Newton iterations, stiffness ratios, and an adaptive ODE controller are not additional tasks here. We retain the supplied report template's narrative structure, pseudocode, verification, cost comparison, references and transparency appendices.
+
+\subsection{GBM model and exact oracle}\label{sec:gbm-model}
+With initial price $S_0>0$, drift $\mu$, constant volatility $\sigma>0$, and standard Brownian motion $W$, the model is
+\begin{equation}\label{eq:gbm-sde}
+dS_t=\mu S_t\,dt+\sigma S_t\,dW_t,\qquad 0\le t\le T.
+\end{equation}
+Time is measured in years and prices in currency units; $\mu$ has units year$^{-1}$ and $\sigma$ year$^{-1/2}$. It\^o's lemma, with $f'(S)=1/S$ and $f''(S)=-1/S^2$, gives
+\begin{equation}\label{eq:gbm-log}
+dX_t=(\mu-\tfrac12\sigma^2)\,dt+\sigma\,dW_t,\qquad X_t=\log S_t.
+\end{equation}
+The exact pathwise oracle and terminal moments are
+\begin{align}
+S_t&=S_0\exp\{(\mu-\tfrac12\sigma^2)t+\sigma W_t\},\label{eq:exact}\\
+m&=\mathbb E[S_T]=S_0e^{\mu T},\label{eq:gbm-mean}\\
+v&=\operatorname{Var}(S_T)=S_0^2e^{2\mu T}(e^{\sigma^2T}-1),\label{eq:gbm-var}\\
+q_p&=S_0\exp\{(\mu-\tfrac12\sigma^2)T+\sigma\sqrt T\Phi^{-1}(p)\}.\label{eq:gbm-quantile}
+\end{align}
+We selected $S_0=100$, $\mu=0.05$, $\sigma=0.30$, $T=1$ for GBM; the pack does not prescribe these GBM values. Equations~\eqref{eq:gbm-mean}--\eqref{eq:gbm-var} give mean $105.1271$ and variance $1040.7868$. An exact terminal value is calculated using the same $W_T$ as the numerical path, not a separate random draw.
+
+\subsection{Prescribed non-affine model}\label{sec:nonaffine-model}
+With $X_t=\log S_t$, the second model is
+\begin{align}
+dX_t&=[\mu-\tfrac12g(Y_t)^2]\,dt+g(Y_t)\,dW_t^{(1)},\label{eq:na-x}\\
+dY_t&=\kappa(\theta-Y_t)\,dt+\xi\sqrt{1+Y_t^2}\,dW_t^{(2)},\label{eq:na-y}\\
+g(y)&=\sigma_{\min}+\frac{\sigma_{\max}-\sigma_{\min}}{1+e^{-y}},\qquad
+d\langle W^{(1)},W^{(2)}\rangle_t=\rho\,dt.\label{eq:na-g}
+\end{align}
+Here $Y$ is a dimensionless latent volatility factor, $g(Y)$ is instantaneous asset volatility, $\kappa$ is a mean-reversion rate, $\theta$ its long-run factor level, $\xi$ the factor's noise scale, and $\rho$ the instantaneous driver correlation. The bounded logistic function keeps $g$ between two positive limits. The nonlinear factor diffusion prevents using the GBM exact transition formula.
+\begin{table}[H]\centering
+\caption{The prescribed non-affine baseline, reproduced without changing the pack's parameters.}\label{tab:na-parameters}
+\begin{tabular}{cccccc}\toprule
+$S_0$ & $Y_0$ & $\mu$ & $\kappa$ & $\theta$ & $\xi$\\\midrule
+100 & 0 & 0.05 & 2 & $-0.2$ & 0.6\\\midrule
+$\rho$ & $\sigma_{\min}$ & $\sigma_{\max}$ & $T$ & $X_0$ & strike $K$\\\midrule
+$-0.7$ & 0.10 & 0.50 & 1 & $\log100$ & 100\\\bottomrule
+\end{tabular}
+\end{table}
+Sections~\ref{sec:methods} and \ref{sec:implementation} explain the methods and implementation. Section~\ref{sec:experiments} compares accuracy, uncertainty and cost. Section~\ref{sec:conclusions} states the limitations.
+\newpage
+
+\section{Discretisation, convergence and stochastic stability}\label{sec:methods}
+\subsection{Three GBM updates}
+Let $t_n=nh$, $h=T/N$ and $\Delta W_n=W_{t_{n+1}}-W_{t_n}$. Brownian motion has independent increments with
+\begin{equation}\label{eq:increment}
+\Delta W_n=\sqrt h Z_n,\quad Z_n\sim\mathcal N(0,1),\quad
+\mathbb E[\Delta W_n]=0,\quad \mathbb E[(\Delta W_n)^2]=h.
+\end{equation}
+The variance is $h$, whereas the standard deviation is $\sqrt h$. Exact simulation, price-based EM and scalar Milstein are respectively
+\begin{align}
+S_{n+1}^{\rm exact}&=S_n^{\rm exact}\exp\{(\mu-\tfrac12\sigma^2)h+\sigma\Delta W_n\},\label{eq:gbm-exact-step}\\
+S_{n+1}^{E}&=S_n^E(1+\mu h+\sigma\Delta W_n),\label{eq:em}\\
+S_{n+1}^{M}&=S_n^M[1+\mu h+\sigma\Delta W_n+
+\tfrac12\sigma^2((\Delta W_n)^2-h)].\label{eq:mil}
+\end{align}
+An update formula advances an approximation by one time step from known old values. Milstein includes $\tfrac12 b(S)b'(S)((\Delta W)^2-h)$, with $b(S)=\sigma S$ \cite{higham,kloeden}. EM on the GBM log price instead reproduces equation~\eqref{eq:gbm-exact-step} exactly; its Milstein correction vanishes. It is therefore inappropriate for demonstrating a nonzero GBM time-discretisation error.
+
+\subsection{Strong versus weak error and convergence order}\label{sec:orders}
+The terminal errors used throughout are
+\begin{align}
+e_s(h)&=\mathbb E|S_N^{(h)}-S_T|,\label{eq:strong}\\
+e_w(h;\varphi)&=|\mathbb E[\varphi(S_N^{(h)})]-\mathbb E[\varphi(S_T)]|.\label{eq:weak-definition}
+\end{align}
+Strong error compares corresponding realizations; weak error compares an observable's expectation. Neither is a maximum-in-time path error. If $e(h)\sim Ch^p$ with $C>0$, then $\log e(h)\sim\log C+p\log h$, so the log--log slope approaches $p$.
+
+For GBM, expanding the exact multiplier shows the leading term that EM omits:
+\begin{equation}\label{eq:local-expansion}
+e^{(\mu-\sigma^2/2)h+\sigma\Delta W}
+=1+\mu h+\sigma\Delta W+\tfrac12\sigma^2[(\Delta W)^2-h]
++O_{L^2}(h^{3/2}).
+\end{equation}
+The centered quadratic increment has variance $2h^2$. The martingale part of the local error has centered, orthogonal increments across steps: its scale accumulates like a square root of the number of steps, rather than their absolute sum, giving $\sqrt{T/h}\,h=O(h^{1/2})$. The state-weighted errors need not be independent. Milstein cancels that leading term; its remaining local $L^2$ defect is $O(h^{3/2})$, with local mean defect $O(h^2)$, yielding a global $O(h)$ scale. This is an explanatory order argument, not a complete proof. The standard strong-convergence theorem, using globally Lipschitz coefficients and the required coefficient derivatives and finite moments, justifies EM order $1/2$ and scalar Milstein order $1$ in this GBM setting \cite{higham,kloeden}. It also implies the corresponding terminal $L^1$ upper bounds by Cauchy--Schwarz.
+
+For the particular weak observable $\varphi(S)=S$, both schemes have the same conditional mean because the noise terms in equation~\eqref{eq:increment} are centered:
+\begin{align}
+\mathbb E[S_{n+1}^E\mid\mathcal F_{t_n}]&=(1+\mu h)S_n^E,\label{eq:conditional-em}\\
+\mathbb E[S_{n+1}^M\mid\mathcal F_{t_n}]&=(1+\mu h)S_n^M,\label{eq:conditional-mil}\\
+\mathbb E[S_N^E]=\mathbb E[S_N^M]&=S_0(1+\mu h)^{T/h}.\label{eq:discrete-mean}
+\end{align}
+Using $\log(1+\mu h)=\mu h-\mu^2h^2/2+O(h^3)$ gives the signed bias
+\begin{equation}\label{eq:weak}
+b_{\rm exact}(h)=S_0(1+\mu h)^{T/h}-S_0e^{\mu T}
+=-\tfrac12 S_0e^{\mu T}\mu^2Th+O(h^2).
+\end{equation}
+The nonzero leading constant for our $\mu=0.05$ proves first-order mean bias. If $\mu=0$, this mean bias vanishes and there is no slope to measure. Identical mean bias does not imply identical biases for every payoff.
+
+\subsection{Non-affine log-EM and correlated noise}
+From independent $Z_{1,n},Z_{2,n}\sim\mathcal N(0,1)$, generate
+\begin{equation}\label{eq:correlation}
+\Delta W_n^{(1)}=\sqrt h Z_{1,n},\qquad
+\Delta W_n^{(2)}=\sqrt h(\rho Z_{1,n}+\sqrt{1-\rho^2}Z_{2,n}).
+\end{equation}
+Both increments have variance $h$, and their covariance is $\rho h$. The simultaneous EM update is
+\begin{align}
+X_{n+1}&=X_n+[\mu-\tfrac12g(Y_n)^2]h+g(Y_n)\Delta W_n^{(1)},\label{eq:na-em-x}\\
+Y_{n+1}&=Y_n+\kappa(\theta-Y_n)h+\xi\sqrt{1+Y_n^2}\Delta W_n^{(2)},\label{eq:na-em-y}\\
+S_{n+1}&=e^{X_{n+1}}.\label{eq:na-price}
+\end{align}
+Both right-hand sides use $Y_n$, not the newly computed $Y_{n+1}$. We do not implement multidimensional Milstein. With $a(y)=\xi\sqrt{1+y^2}$ and $c=\sqrt{1-\rho^2}$, the diffusion columns relative to independent drivers and their commutator are
+\begin{equation}\label{eq:commutator}
+b_1=(g,\rho a)^\top,\quad b_2=(0,ca)^\top,\quad
+(Db_2)b_1-(Db_1)b_2=(-ca\,g'(y),0)^\top\ne0.
+\end{equation}
+Cross terms and iterated stochastic integrals cannot in general be removed. Copying the scalar GBM correction would not justify strong order one \cite{kloeden}.
+
+\subsection{Moment checks and positivity instead of ODE stability plots}
+For GBM's price methods, the first and second expected multiplier moments are
+\begin{equation}\label{eq:discrete-second}
+\mathbb E[A]=1+\mu h,\qquad
+\mathbb E[A_E^2]=(1+\mu h)^2+\sigma^2h,\qquad
+\mathbb E[A_M^2]=\mathbb E[A_E^2]+\tfrac12\sigma^4h^2.
+\end{equation}
+They give finite discrete terminal moments and independent analytic checks. Growth of moments is not itself instability: the physical GBM mean and variance also grow. We do not claim unrestricted numerical stability from a lack of observed blow-up. Positivity, finiteness and reference sensitivity are separate diagnostics; Section~\ref{sec:positivity} analyses the price multipliers.
+\newpage
+
+\section{Implementation and experimental protocol}\label{sec:implementation}
+\subsection{Coupled paths and the role of the grid}
+A grid is the set of time points where a method updates its states. Finer grids have shorter steps and more updates per path. Let $\delta$ be the finest step and $h=r\delta$. Every coarser increment is formed by addition:
+\begin{equation}\label{eq:coupling}
+\Delta W_n^{(h)}=\sum_{j=nr}^{(n+1)r-1}\Delta W_j^{(\delta)}.
+\end{equation}
+We aggregate each driver separately, preserving its variance and driver correlation. We then rerun each method's states from the initial conditions on its own grid. We do not merely select a subset of fine-grid prices. Independent paths across grids would measure path mismatch rather than strong discretisation error.
+
+\begin{algorithm}[H]
+\caption{Coupled terminal comparison with bounded-memory batches}\label{alg:coupled}
+\begin{algorithmic}[1]
+\Require Model, initial data, $T$, nested grids, path count $M$, seed, batch size
+\Ensure Terminal errors, paired intervals, diagnostics and saved arrays
+\State Initialise a fixed-seed generator and streaming statistics
+\For{each independent batch of paths}
+\State Generate Brownian increments on the finest grid
+\State For the non-affine model, correlate the two drivers by equation~\eqref{eq:correlation}
+\For{each numerical grid}
+\State Sum fine increments using equation~\eqref{eq:coupling}
+\State Reset the state and apply its update rule for all time steps
+\State Check finite states and collect terminal prices
+\EndFor
+\State Form absolute pathwise errors and signed payoff differences on paired paths
+\State Accumulate moments and save the specified terminal arrays
+\EndFor
+\State Export CSV/JSON evidence and regenerate figures and report tables
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Sampling intervals, fitted rates and control variates}
+For $M$ independent observations $A_i=|S_{T,i}^{(h)}-S_{T,i}^{\rm ref}|$ and $D_i=\varphi(S_{T,i}^{(h)})-\varphi(S_{T,i}^{\rm ref})$, use
+\begin{equation}\label{eq:mc-ci}
+\widehat e_s=\overline A,\qquad \widehat b=\overline D,\qquad
+\widehat{\rm SE}(\overline U)=\frac{s_U}{\sqrt M},\qquad
+{\rm CI}_{95}(\overline U)\approx\overline U\pm1.96\frac{s_U}{\sqrt M}.
+\end{equation}
+Independence between paths gives the standard-error scale; the central limit theorem supplies the approximate normal interval when variance is finite. Sampling intervals are pointwise, not simultaneous, and exclude numerical-reference bias. Signed weak intervals are retained even when they cross zero. Taking the logarithm of an absolute noisy bias does not resolve its sign or justify a rate.
+
+Production fitted rates use explicitly stated windows. Levels share paths, so an ordinary regression covariance matrix would not be an independent-level uncertainty calculation. Additional independent-seed runs in Section~\ref{sec:repeats} preserve within-run coupling and assess across-run variability instead.
+
+The GBM mean bias is small relative to raw sampling noise. We use five exactly centered controls $C$ and a coefficient vector $\beta$ fitted on a separate pilot, then estimate $D-\beta^\top C$ in production. Conditional on the independent pilot,
+\begin{equation}\label{eq:control-unbiased}
+\mathbb E[D-\beta^\top C\mid\beta]=\mathbb E[D],\qquad \mathbb E[C]=0.
+\end{equation}
+This reduces sampling variance without substituting equation~\eqref{eq:weak} for simulated results. Appendix~\ref{app:controls} gives the control definitions; raw and controlled estimates remain in the CSV.
+
+\subsection{Files, units and design decisions}
+Algorithm~\ref{alg:coupled} explains the shared-noise workflow; Table~\ref{tab:code-files} locates its executable components.
+\begin{table}[H]\centering\small
+\caption{Executable components in the portable code archive. Paths are relative to its top-level folder.}\label{tab:code-files}
+\begin{tabular}{lp{9cm}}\toprule
+File & Purpose\\\midrule
+\texttt{code/gbm.py} & Exact GBM, price EM/Milstein and independent-pilot controls\\
+\texttt{code/nonaffine.py} & Simultaneous log-EM, nested grids and state diagnostics\\
+\texttt{code/verify.py} & Separate recurrence/quadrature checks and saved-data consistency\\
+\texttt{code/build\_report\_data.py} & Tables, numeric macros and production-report plots\\
+\texttt{code/submission\_experiments.py} & Independent-seed repeat study and measured kernel-cost comparison\\
+\texttt{code/run\_all.py} & One-command reproduction; isolated smoke-test mode\\\bottomrule
+\end{tabular}
+\end{table}
+All model parameters are named constants or dictionaries; no market-data download is required. A stable logistic evaluation avoids exponentiating a large positive number. Batching controls memory but is part of reproducibility, since changing batch shape can assign pseudorandom draws to different paths. The non-affine Numba kernel accelerates time stepping but does not supply an external exact sampler. The model-specific integrator is intentionally specialised to this assignment; its constant-volatility reduction supplies a swappable special-case verification.
+
+\input{results/protocol_table.tex}
+Table~\ref{tab:protocol} records the production protocol and its measured original run costs.
+The GBM rate window is \GBMFitWindow{}; the non-affine principal strong window is \NAFitWindow{}. Choices not specified in the pack include GBM parameters, path counts, seeds, grids, batch sizes, controls, fit windows and the practical 10\% reference-sensitivity screen. These choices are recorded, not presented as assignment-supplied constants. The second model's parameters are those in Table~\ref{tab:na-parameters}.
+The call observable $\varphi(S)=(S-100)^+$ is an \emph{undiscounted expected payoff} under the supplied drift. It is not a risk-neutral option price without a pricing measure and discount rate.
+\newpage
+
+\section{Numerical experiments}\label{sec:experiments}
+\subsection{Verification against independently constructed checks}\label{sec:verification}
+The exact GBM solution in equation~\eqref{eq:exact} is our main pathwise oracle. The verification script also independently recomputes the EM/Milstein recurrences with a loop, uses Gaussian quadrature for multiplier moments, recomputes non-affine simultaneous updates in scalar Python, and reduces the non-affine model to constant volatility. In that special case log-EM must agree with exact GBM on every grid. Finally it recomputes reported strong and signed weak statistics from the saved terminal arrays. These checks test the imported executable functions rather than a disconnected explanatory listing. Recorded verification and smoke-test evidence accompany the archive. Automated checks do not constitute a signed human code review.
+
+\subsection{GBM strong convergence}\label{sec:gbmstrong}
+\begin{figure}[H]\centering
+\includegraphics[width=.95\textwidth]{report_gbm_strong.pdf}
+\caption{Coupled GBM terminal $L^1$ error. Reference lines benchmark orders $1/2$ and $1$; pointwise 95\% sampling intervals are often smaller than the markers. Milstein's pathwise error decays faster.}\label{fig:gbm-strong}
+\end{figure}
+\input{results/gbm_strong_table.tex}
+Figure~\ref{fig:gbm-strong} and Table~\ref{tab:gbm-strong} give production slopes \GBMEMRate{} for EM and \GBMMilRate{} for Milstein on \GBMFitWindow{}. The distinction agrees with Section~\ref{sec:orders}. The comparison uses the same Brownian paths, not separate realizations. Exact simulation has no time-discretisation error at the grid points, although floating-point sums can change when regrouped.
+
+\subsection{GBM weak mean convergence}\label{sec:gbmweak}
+\begin{figure}[H]\centering
+\includegraphics[width=.95\textwidth]{report_gbm_weak.pdf}
+\caption{Controlled paired mean-bias estimates and the analytic discrete-mean bias. Both methods approach the same order-one line because their expected one-step multipliers coincide, not because their paths have equal accuracy.}\label{fig:gbm-weak}
+\end{figure}
+\input{results/gbm_weak_table.tex}
+Equation~\eqref{eq:discrete-mean} explains the near-overlap in Figure~\ref{fig:gbm-weak}. The analytic fitted slope is \GBMAnalyticWeakRate{}; controlled production slopes are \GBMEMWeakRate{} and \GBMMilWeakRate{}. At $N=1024$ the analytic bias magnitude is only about $1.28\times10^{-4}$ currency units. The raw EM standard error is larger, so the archive retains both the unadjusted estimates and the variance-reduced estimates. Their independence from the pilot, rather than agreement with a desired curve alone, protects the interpretation. Table~\ref{tab:gbm-weak} compares actual estimates with the analytic oracle.
+
+\subsection{Distribution and positivity}\label{sec:positivity}
+\begin{figure}[H]\centering
+\includegraphics[width=.94\textwidth]{gbm_distribution.pdf}
+\caption{GBM terminal histogram and exact lognormal density. The coarse $h=1/8$ comparison tests distributional agreement; quantiles in Table~\ref{tab:gbm-quantile} add a separate numerical check.}\label{fig:distribution}
+\end{figure}
+\input{results/gbm_quantile_table.tex}
+Figure~\ref{fig:distribution} checks the density and empirical quantiles. Exact-simulation empirical mean and variance are \GBMExactMean{} and \GBMExactVariance{}, and its mean interval is \GBMExactMeanCI{}. The theoretical targets are $105.1271$ and $1040.7868$. Sampling fluctuations remain even when a sampler is exact.
+
+For a positive old price, EM's one-step negative probability and Milstein's completed-square multiplier are
+\begin{align}
+\mathbb P(S_{n+1}^E<0\mid S_n^E>0)&=\Phi\!\left(-\frac{1+\mu h}{\sigma\sqrt h}\right),\label{eq:em-negative}\\
+A_M&=\tfrac12\sigma^2(\Delta W+1/\sigma)^2+\tfrac12+(\mu-\tfrac12\sigma^2)h.\label{eq:mil-negative}
+\end{align}
+For $\sigma>0$, a negative Milstein multiplier has positive probability exactly when $(\sigma^2-2\mu)h>1$. In this baseline $\sigma^2-2\mu=-0.01$, so Milstein is positive for all $h>0$; this is not a universal statement about Milstein.
+The saved terminal nonpositive counts are zero out of $160{,}000$ paths for both methods at every $N=8,16,32,64,128,256,512,1024$. These counts imply zero observed strictly negative terminals, but do not count paths ever becoming negative between terminals. Zero observations do not prove EM positivity preservation. Negative prices could distort nonlinear payoffs; clipping them would also change and bias the scheme. Neither price scheme is clipped. This optional positivity investigation is limited to formulas and terminal frequencies, not a stress-test pricing study.
+\newpage
+
+\subsection{Non-affine strong differences and reference sensitivity}\label{sec:na-strong}
+\begin{figure}[H]\centering
+\includegraphics[width=.95\textwidth]{report_nonaffine_strong.pdf}
+\caption{Terminal strong differences against three coupled numerical references. The approximately half-order slope is empirical; agreement of two EM grids is not error against an exact solution.}\label{fig:na-strong}
+\end{figure}
+\input{results/nonaffine_strong_table.tex}
+Against $N_{\rm ref}=8192$, the empirical slope is \NARate{} on \NAFitWindow{}. Table~\ref{tab:nonaffine-strong} records the finest-reference estimates, while Figure~\ref{fig:na-strong} displays all three references so the rate is not tied to one unexamined benchmark. The fitted slopes for references $2048$, $4096$ and $8192$ are approximately $0.496$, $0.493$ and $0.491$. Finer coarse points are more sensitive to reference resolution.
+With $S^\star$ the unknown continuous-time terminal price, the reverse triangle inequality yields
+\begin{equation}\label{eq:reference-bound}
+\left|\mathbb E|S_h-S^\star|-\mathbb E|S_h-S_r|\right|
+\le\mathbb E|S_r-S^\star|.
+\end{equation}
+The unknown right-hand side is not replaced by a reference-to-reference difference. We report the latter only as sensitivity evidence.
+\input{results/nonaffine_reference_table.tex}
+\NAReferenceInterpretation{}
+Table~\ref{tab:nonaffine-reference} supplies the required two further reference refinements. The last strong discrepancy is about $0.04016$ currency units, with substantial impact on the finest coarse grids. The 10\% screen is a chosen practical diagnostic, not a rigorous exact-error bound.
+
+\subsection{Non-affine weak payoff differences}\label{sec:na-weak}
+\begin{figure}[H]\centering
+\includegraphics[width=.95\textwidth]{report_nonaffine_weak.pdf}
+\caption{Signed call-payoff differences relative to $N_{\rm ref}=8192$. The zero line and paired sampling intervals show why a weak slope is not assigned to the fine-grid estimates. A signed linear ordinate avoids taking logs of intervals crossing zero.}\label{fig:na-weak}
+\end{figure}
+\input{results/nonaffine_weak_table.tex}
+\NAWeakInterpretation{}
+The payoff has a corner at the strike, so smooth-test-function weak-order results cannot simply be assumed. Figure~\ref{fig:na-weak} and Table~\ref{tab:nonaffine-weak} quantify signed sampling uncertainty, not numerical-reference bias.
+
+For the continuous model, bounded $g$ makes the stochastic exponential a true finite-horizon martingale, so the mean remains $S_0e^{\mu T}$. The discrete log-EM method preserves that same mean at any step size:
+\begin{equation}\label{eq:na-mean}
+\mathbb E[S_{n+1}\mid\mathcal F_{t_n}]
+=S_ne^{(\mu-g(Y_n)^2/2)h}
+\mathbb E[e^{g(Y_n)\Delta W_n^{(1)}}\mid\mathcal F_{t_n}]
+=S_ne^{\mu h}.
+\end{equation}
+The Gaussian exponential expectation cancels the variance correction. Thus an accurate mean alone cannot test weak time bias for this model. This motivates a nontrivial payoff observable.
+
+\begin{table}[H]\centering\small
+\caption{Observed Brownian and state diagnostics. Increment moments are measured from generated fine increments; state checks include intermediate updates.}\label{tab:na-diagnostics}
+\input{results/nonaffine_diagnostics_table.tex}
+\end{table}
+The finest mean is \NAExactMean{} with sampling interval \NAExactMeanCI{}, consistent with its exact first-moment target. The expected payoff estimate is \NAPayoff{} with interval \NAPayoffCI{} for the finest \emph{discrete} model. Table~\ref{tab:na-diagnostics} checks both driver variances against $h$, correlation against $-0.7$, and finite positive asset states.
+\newpage
+
+\subsection{Independent-seed variability of fitted rates}\label{sec:repeats}
+\input{results/submission_repeat_results.tex}
+
+\subsection{Measured cost at a common accuracy threshold}\label{sec:cost}
+\input{results/submission_cost_results.tex}
+\newpage
+
+\section{Conclusions and limitations}\label{sec:conclusions}
+GBM verifies the expected strong advantage of Milstein, but both price methods have exactly the same first-order terminal-mean bias. The observed overlap of weak curves has a mathematical explanation; it is not a plotting mistake. Exact simulation is preferable for GBM itself, while the numerical price methods provide a controlled validation exercise.
+
+For the prescribed non-affine model, log-EM preserves positive prices and its first moment. Nested references yield approximately half-order strong differences on the selected coarse window. They do not supply an exact error. Fine-grid payoff differences are unresolved by the pointwise sampling intervals, so no complete-grid weak order is claimed.
+
+Accuracy and work have different components. Halving the time step roughly doubles path updates; four times as many independent paths roughly halves a standard error. Coupling and controls reduce sampling noise, while refinement addresses discretisation. More paths cannot repair an underresolved reference. The supplemental cost evidence is specific to the measured implementation and stated common accuracy threshold, not a portable claim that one method is always faster.
+
+The scope is limited to the stated parameters, horizon, terminal $L^1$ norm, path counts and fit windows. Positivity frequency diagnostics cover terminals for GBM, and all observed states for non-affine EM. We do not claim exact weak payoff errors, unconditional GBM positivity, or a scalar-Milstein rate for a noncommutative two-noise system. A useful next step is a larger paired payoff experiment with stronger reference resolution and variance reduction, followed by stress tests in higher-volatility regimes.
+
+\subsection*{Reproducibility and intellectual ownership}
+The code archive includes fixed-seed source, saved arrays, numeric results, figure-generation scripts and machine/environment evidence. It supports full reproduction and isolated reduced smoke tests. AI assistance included derivations, explanations, implementation, numerical execution and document preparation. Appendix~\ref{app:ai} records the significant claim audits and distinguishes automated verification from the team's responsibilities. Appendices~\ref{app:ics-2362353}--\ref{app:ics-2359968} record the members' individual contributions.
+
+\begin{thebibliography}{9}
+\bibitem{pack} \emph{Problem Pack: Five Suggested Directions for the ODE IVP Project}. Supplied coursework document, introductory SDE exception and Direction~4, pp.~6--7.
+\bibitem{higham} D.~J. Higham. An algorithmic introduction to numerical simulation of stochastic differential equations. \emph{SIAM Review}, 43(3):525--546, 2001. \href{https://doi.org/10.1137/S0036144500378302}{doi:10.1137/S0036144500378302}.
+\bibitem{kloeden} P.~E. Kloeden and E.~Platen. \emph{Numerical Solution of Stochastic Differential Equations}. Springer, 1992. \href{https://doi.org/10.1007/978-3-662-12616-5}{doi:10.1007/978-3-662-12616-5}.
+\bibitem{numpy} C.~R. Harris et al. Array programming with NumPy. \emph{Nature}, 585:357--362, 2020. \href{https://doi.org/10.1038/s41586-020-2649-2}{doi:10.1038/s41586-020-2649-2}.
+\bibitem{numba} S.~K. Lam, A.~Pitrou and S.~Seibert. Numba: A LLVM-based Python JIT compiler. \emph{LLVM-HPC}, 2015. \href{https://doi.org/10.1145/2833157.2833162}{doi:10.1145/2833157.2833162}.
+\end{thebibliography}
+\newpage
+\appendix
+\input{ai_transparency.tex}
+\input{individual_statements.tex}
+\newpage
+\section{Control-variate definitions and reproduction}\label{app:controls}
+Let $W=\sum_n\Delta W_n$, $Q=\sum_n[(\Delta W_n)^2-h]$,
+$R=\sum_n[(\Delta W_n)^3-3h\Delta W_n]$, and $L=e^{\sigma W-\sigma^2T/2}$. The implemented controls are
+\begin{equation}\label{eq:controls}
+\begin{aligned}
+C_1&=L-1,& C_2&=L(W-\sigma T)/\sqrt T,\\
+C_3&=L(Q-\sigma^2Th)/\sqrt{2Th},& C_4&=L(R-\sigma^3Th^2)/\sqrt{6Th^2},\\
+C_5&=\frac{L[Q^2-(2Th+4\sigma^2Th^2+\sigma^4T^2h^2)]}{\sqrt8\,Th}.
+\end{aligned}
+\end{equation}
+Gaussian exponential tilting shifts each increment's mean to $\sigma h$ and preserves its variance $h$, giving zero expectation for all five controls. Coefficients are fitted only on independent pilot paths. The analytic discrete bias remains a validation target, never a replacement for a production estimate.
+\begin{lstlisting}[numbers=none,caption={Commands from the extracted code archive's top-level directory.}]
+python -m pip install -r requirements.txt
+python code/verify.py
+python -m unittest discover -s tests -v
+python code/run_all.py --smoke
+python code/run_all.py
+\end{lstlisting}
+Full reproduction regenerates production outputs and supplemental evidence. A smoke run is deliberately too small for scientific slope claims and writes to an isolated directory. The README records exact commands, dependency ranges, historical production versions and which cost components are excluded. The supplied report PDF does not require a local LaTeX installation merely to read it.
+\end{document}

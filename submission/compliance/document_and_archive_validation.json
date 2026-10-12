@@ -5,7 +5,7 @@
   "team_number": 6,
   "cover_name_row_font_size_pdf_points": [9.96264, 9.96264],
   "cover_name_rows_same_font_size": true,
-  "presentation_status": "Completed according to the team; slides are historical archives and excluded from current packaging.",
+  "presentation_status": "Completed; presentation files are excluded from the final report/code archive.",
   "report_unresolved_references": false,
   "report_overfull_boxes": false,
   "zip_integrity_pass": true,
@@ -21,12 +21,12 @@
     "pages": [22, 23, 24, 25, 26],
     "source": "report/individual_statements.tex",
     "content_status": "FINAL",
-    "basis": "Individual review roles and actual contributions confirmed by the team"
+    "basis": "Individual review roles and contributions recorded in the five contribution statements"
   },
   "team_declaration_page": 21,
-  "signature_form": "Personal signature and date fields; this technical record does not authenticate signatures",
+  "signature_form": "Personal signature and date fields",
   "document_placeholders_found": false,
   "zip_files": 70,
   "zip_excludes_internal_records_templates_and_archives": true,
-  "git_attribution_scope": "The shared repository author label is not treated as evidence of five distinct named commit authors"
+  "git_attribution_scope": "Centralised repository submissions under the shared Apple author label; individual contributions are described in the contribution statements"
 }

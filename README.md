@@ -1,101 +1,48 @@
-# Problem 4 Financial SDE Coursework
+# Numerical Simulation of Financial SDEs
 
-The final Team 6 deliverables are [Financial_SDE_Report.pdf](submission/upload/Financial_SDE_Report.pdf)
-and [Financial_SDE_Code.zip](submission/upload/Financial_SDE_Code.zip).
-See [submission/README.md](submission/README.md) for reproduction instructions.
-The report includes the team AI Transparency Log and five individual contribution
-statements. The completed presentation and original 12-page report are preserved
-as historical project files; slides are not part of the current report/code package.
+Problem 4 — Team 6
 
-The formal report has 27 pages, including the team AI Transparency Log and five individual contribution statements. The `submission/` directory contains the report source, portable Python code, tests, numerical results and figures.
+Yifan Chen (2362353), Zeya Hu (2362375), Yanle Li (2363600), Qingwen Ma (2361052), and Chenyi Xu (2359968).
 
-## Formal submission files
+This project compares exact simulation, price-based Euler–Maruyama (EM), and scalar Milstein for geometric Brownian motion (GBM). It then studies the prescribed non-affine stochastic-volatility model using correlated Brownian drivers, simultaneous log-price EM, and nested numerical references. The report evaluates terminal strong error, weak observables, Monte Carlo uncertainty, distributional diagnostics, reference sensitivity, and computational cost.
 
-- `submission/upload/Financial_SDE_Report.pdf` — Team 6 report and contribution statements.
-- `submission/upload/Financial_SDE_Code.zip` — reproducible code folder and README.
-- `submission/upload/manifest.json` — file sizes and SHA-256 checksums.
-- `submission/report/report.tex` — report source.
-- `submission/report/individual_statements.tex` — five completed contribution statements.
-- `submission/report/ai_transparency.tex` — team AI Transparency Log and declaration.
+## Assessment materials
 
-For installation, reproduction, figure generation and compilation commands, use [submission/README.md](submission/README.md).
+| Material | Location |
+| --- | --- |
+| Report, AI Transparency Log, and five Individual Contribution Statements | [Financial_SDE_Report.pdf](submission/upload/Financial_SDE_Report.pdf) |
+| Portable code archive with README, tests, results, and figures | [Financial_SDE_Code.zip](submission/upload/Financial_SDE_Code.zip) |
+| Dependencies, reproduction commands, and figure-to-source mapping | [Submission README](submission/README.md) |
+| Executable implementation and tests | `submission/code/` and `submission/tests/` |
+| Full-precision numerical evidence and terminal samples | `submission/results/` |
+| Report source and figures | `submission/report/` and `submission/figures/` |
+| Artifact sizes and SHA-256 checksums | `submission/upload/manifest.json` |
+| Self-contained report source for Overleaf | `Overleaf_FinancialSDE_Team6/` |
 
-## Historical numerical baseline
+The report has 27 pages, including the transparency and individual-contribution appendices. The assessed implementation is in `submission/`; other repository directories retain the earlier numerical baseline and supporting coursework materials.
 
-The following root-level files document the original numerical baseline. They are retained as project history and are not the report/code files to upload.
+## Validation and reproduction
 
-- Problem4_FinancialSDE_Coursework.pdf — compiled 12-page report.
-- Problem4_FinancialSDE_Coursework.tex — original report source.
-- run_all.py — reproduce both experiments, validate the saved results, and rebuild report tables/plots.
-- gbm.py — exact GBM, price EM, and scalar Milstein, with an independent control-variate pilot.
-- nonaffine.py — coupled log-EM for the prescribed non-affine model, with three reference grids.
-- verify.py — independent deterministic checks and saved-array/statistics consistency checks.
-- build_report_data.py — generate report tables, numeric macros, and four report-specific figures from JSON/CSV.
-- numerical_summary.txt — compact account of the actual completed run.
-- results/ — full-precision JSON/CSV, terminal samples in NPZ, verification evidence, and run logs.
-- figures/ — vector PDF and high-resolution PNG figures.
-- source/problem_pack.pdf — supplied assignment.
+The following commands are executed from `submission/`:
 
-## Reproduce the historical baseline
+```sh
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python code/verify.py --no-write
+python code/run_all.py --smoke
+```
 
-The original production metadata records Python 3.12.14, NumPy 2.5.3, Matplotlib 3.11.1 and Numba 0.67.0 on Windows. The formal package README separately records the environment used for cross-platform verification.
+The seven unit tests and saved-array checks verify update formulas, Brownian coupling, increment scaling, discrete moments, control centering, and numerical statistics. The reduced smoke run checks execution and figure generation, not scientific convergence rates.
 
-In a terminal opened in this directory:
+The production workflow is `python code/run_all.py`. The [submission README](submission/README.md) records path counts, seeds, grid sizes, fit windows, dependencies, output locations, and the scope of the timing measurements.
 
-    python -m pip install -r requirements.txt
-    python run_all.py
+## Main findings and interpretation
 
-The run generates all numerical outputs before the final report-building step. It does not require internet access after dependencies are installed. Run logs and metadata describe the completed experiment; timing will vary by machine.
+GBM terminal strong slopes are approximately 0.500 for EM and 0.991 for Milstein. Their terminal-mean biases are nevertheless identical because both methods have the same expected one-step multiplier. For the non-affine model, the empirical strong slope is approximately 0.491 on the specified coarse-grid window. Fine-grid payoff differences are unresolved by their sampling intervals, so no weak order is assigned to those estimates.
 
-To check the supplied results without resimulating all paths:
+Strong error is terminal L1 error, not a path-supremum norm. Non-affine comparisons use finite numerical references rather than an exact transition oracle. The call observable is an undiscounted expected payoff under the specified drift, not a risk-neutral option price. The cost study uses a common accuracy threshold and reports update-kernel latency rather than end-to-end runtime.
 
-    python verify.py
+## Repository submissions and individual contributions
 
-To rebuild the figures/tables without resimulation:
-
-    python build_report_data.py
-
-To compile the report, install a LaTeX distribution with the packages listed in the preamble, then run twice:
-
-    pdflatex -interaction=nonstopmode -halt-on-error Problem4_FinancialSDE_Coursework.tex
-    pdflatex -interaction=nonstopmode -halt-on-error Problem4_FinancialSDE_Coursework.tex
-
-The PDF is already compiled, so LaTeX is not needed just to read the report or run the experiments.
-
-## Experimental settings
-
-GBM (chosen baseline): S0=100, mu=0.05, sigma=0.30, T=1.
-Production paths: 160,000. Independent pilot: 20,000.
-Production seed: 2026090804. Pilot seed: 2026090805. Batch size: 2,000.
-Time steps: 1/8, 1/16, ..., 1/1024.
-Strong and controlled weak slopes use the five finest grids.
-
-Non-affine model (prescribed baseline): S0=100, Y0=0, mu=0.05, kappa=2,
-theta=-0.2, xi=0.6, rho=-0.7, sigma_min=0.10, sigma_max=0.50, T=1.
-Paths: 100,000. Seed: 2026090804. Batch size: 512.
-Coarse grids: N=8,16,32,64,128,256.
-Reference grids: N=2048,4096,8192.
-The prespecified principal strong-rate window uses N=8,16,32,64.
-
-All coarse increments sum the finest Brownian increments. The two models are separate experiments; using the same seed does not imply a pathwise comparison between models. Preserve path count, grid sizes, seeds, batch sizes, and package versions to reproduce the saved realizations. In particular, changing the non-affine batch size changes which pseudorandom draws are assigned to a path.
-
-The .deps lookup in scripts is optional support for the development environment. This clean package does not contain .deps; a regular Python installation with requirements.txt is sufficient.
-
-## Interpretation
-
-Strong error is terminal L1, not a path-supremum norm. Weak error uses signed paired differences and 95% pointwise Monte Carlo confidence intervals. The GBM CSV contains raw paired and control-variate estimates separately. Exact discrete-mean bias is a validation target, never substituted for simulated results.
-
-Non-affine differences are relative to numerical references. The last refinement difference passes a practical 10% sensitivity screen on the stated principal strong-rate window, but does not rigorously bound error against an exact solution. The finer coarse grids retain greater reference sensitivity. No weak order is claimed when the paired confidence intervals include zero.
-
-The call quantity is an undiscounted payoff expectation under the supplied drift, not a risk-neutral option price. The correct mean alone is not a weak-order test: the non-affine log-EM scheme preserves the asset's first moment in expectation at any step.
-
-## Sources
-
-- Supplied Problem Pack, Direction 4, pages 6–7 (included in source/).
-- D. J. Higham (2001), SIAM Review 43(3), 525–546:
-  https://doi.org/10.1137/S0036144500378302
-- P. E. Kloeden and E. Platen (1992), Numerical Solution of Stochastic Differential Equations:
-  https://doi.org/10.1007/978-3-662-12616-5
-
-The earlier numerical-differentiation coursework was used only as a style and structure reference; its numerical results and references were not reused for this problem.
+The team used a centralized Git submission workflow, with one member responsible for committing and pushing the code on behalf of the group. The Git history therefore records repository submissions rather than the full distribution of individual work. Contributions to mathematical analysis, code review, interpretation of results, figures, and the report are documented in the Individual Contribution Statements. AI assistance and the checks of significant AI-assisted claims are disclosed in the report's Team AI Transparency Log.
 

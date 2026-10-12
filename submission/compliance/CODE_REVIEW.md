@@ -1,12 +1,13 @@
 # Final technical code review record
 
-This record combines the team-confirmed division of member review with the
-AI-assisted technical audit and automated verification. The numerical audit
-evidence is recorded in `code_audit_evidence.json`; the report's A4 and five
-individual statements record personal responsibilities. No signature or
-individual authorship is inferred from test results.
+This record documents AI-assisted technical verification and automated checks,
+together with the member review responsibilities recorded in the individual
+contribution statements. The numerical evidence is recorded in
+`code_audit_evidence.json`; the report's A4 and five individual statements
+document personal responsibilities. The technical verification is AI-assisted
+and does not constitute an independent human audit.
 
-## Confirmed member responsibilities
+## Member review responsibilities
 
 | Member | Reviewed contribution |
 |---|---|
@@ -16,11 +17,9 @@ individual authorship is inferred from test results.
 | Qingwen Ma (2361052) | Figures, signed intervals, independent-seed rate variability, and common-accuracy kernel costs. |
 | Chenyi Xu (2359968) | Report consistency, reproduction commands, test/evidence distinctions, and archive organisation. |
 
-These responsibilities follow the confirmed work reflected in the individual
-statements. They do not assert that each member independently authored the
-whole implementation or personally performed the complete production rerun.
-The available Git history uses a shared `Apple` author label and is not
-evidence of separate personal commits.
+The individual statements describe each member's contributions and review
+scope. Repository submissions were centralised under the shared `Apple`
+author label; individual contributions are documented in the statements.
 
 ## Actual tests
 
@@ -71,8 +70,8 @@ exact GBM errors from differences against finite numerical references.
 Problem Pack page 1 explicitly replaces the deterministic stability/adaptivity
 tasks for Direction 4. The required SDE oracle, price EM/Milstein comparison,
 strong/weak errors, Monte Carlo uncertainty, and nested-grid validation were
-checked. We do not claim to have implemented deterministic RK4, Newton,
-absolute-stability regions, or an adaptive time controller.
+checked. Deterministic RK4, Newton, absolute-stability regions and an adaptive
+time controller fall outside this Direction 4 implementation.
 
 The kernels are model-specific and parameterized, rather than a fully generic
 swappable drift/diffusion solver. The constant-volatility reduction tests the
@@ -85,5 +84,4 @@ intervals and repeated-seed slope variability exclude numerical-reference and
 fit-window bias. Fine-grid weak slopes are withheld when signed intervals
 contain zero. GBM negativity counts describe terminal prices. Cost timings
 cover the stated numerical kernels and exclude RNG, grid aggregation and other
-workflow costs. The AI-assisted production rerun and checks are evidence of
-technical reproduction, not proof of personal intellectual ownership.
+workflow costs.

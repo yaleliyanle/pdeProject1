@@ -1,0 +1,114 @@
+\newcommand{\IndividualStatement}[3]{%
+\newpage
+\begingroup\small
+\section{Individual Contribution Statement: #1}\label{app:ics-#2}
+\noindent\textbf{Name:} #1\qquad\textbf{Student ID:} #2\par
+\noindent\textbf{Role this project:} #3\par
+}
+\newcommand{\ICSField}[1]{\par\medskip\noindent\textbf{#1}\par\smallskip}
+\newcommand{\IndividualStatementEnd}{%
+\par\medskip
+\noindent\textbf{Signature:} \underline{\hspace{5cm}}\qquad
+\textbf{Date:} \underline{\hspace{3cm}}\par
+\endgroup
+}
+
+%%%%%%%%%%%%%%
+\IndividualStatement{Yifan Chen}{2362353}{Mathematical models, numerical methods and convergence interpretation.}
+\ICSField{The specific things I did this project.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt,topsep=2pt]
+\item I reviewed the GBM SDE, the It\^o transformation to log price and the exact terminal moments in Section~\ref{sec:gbm-model}. I checked that log-price EM is exact for this constant-coefficient model, whereas the convergence comparison uses price-based EM and Milstein.
+\item I checked the conditional-expectation calculation in equations~\eqref{eq:conditional-em}--\eqref{eq:weak}. I clarified why the two methods have identical terminal-mean bias without having identical pathwise error.
+\item I reviewed the strong--weak distinction and local-expansion discussion in Section~\ref{sec:orders}, together with the non-affine commutator in equation~\eqref{eq:commutator}. I checked the limitation on transferring scalar Milstein order to the two-driver model.
+\end{enumerate}
+\ICSField{The hardest conceptual obstacle and how I addressed it.}
+The main issue was reconciling Milstein's better strong accuracy with the overlapping weak-mean curves. I separated the pathwise error from the selected observable and checked the expectation of each update multiplier. This explained the overlap without treating it as a plotting defect.
+\ICSField{An AI-assisted output I used, what I changed and why.}
+I reviewed the AI-assisted weak-mean explanation recorded in Appendix~\ref{app:ai}, audit item 1. I retained the discrete-mean identity but restricted its interpretation to the mean observable; it does not imply equal accuracy for every payoff or path.
+\ICSField{What I would do differently.}
+I would define the observable and error metric before discussing convergence orders. I would also place the update formula and its expectation side by side for easier checking.
+\ICSField{One thing I still do not fully understand.}
+The full construction and simulation of multidimensional Milstein iterated integrals remains beyond my verified contribution. The report therefore does not claim that method's order for the non-affine model.
+\ICSField{Anything I should have asked for help with earlier.}
+A lesson for future work is to agree on the strong and weak error definitions before interpreting convergence plots.
+\IndividualStatementEnd
+
+%%%%%%%%%%%%%%
+\IndividualStatement{Zeya Hu}{2362375}{GBM implementation, variance reduction and numerical checks.}
+\ICSField{The specific things I did this project.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt,topsep=2pt]
+\item I reviewed \path{code/gbm.py}, particularly \texttt{simulate\_batch}, against equations~\eqref{eq:em} and~\eqref{eq:mil}. I checked that the resolutions aggregate common fine increments and compare their terminal prices with the same exact GBM path.
+\item I checked \texttt{fit\_controls} and the independent pilot protocol in Section~\ref{sec:implementation}. I distinguished the raw Monte Carlo estimates, controlled estimates and analytic bias in \path{results/gbm_convergence.csv}.
+\item I reviewed \texttt{exact\_moments} and \texttt{analytic\_discrete\_moments}, the separate GBM checks in \path{code/verify.py}, and the distribution and positivity evidence in Section~\ref{sec:positivity}.
+\end{enumerate}
+\ICSField{The hardest conceptual obstacle and how I addressed it.}
+The main issue was making a small mean bias visible despite sampling noise. I examined the paired comparison and the independent fitting of control coefficients. I checked that variance reduction changes the sampling variability rather than replacing the numerical mean by its theoretical value.
+\ICSField{An AI-assisted output I used, what I changed and why.}
+I reviewed the AI-assisted GBM implementation and interpretation associated with Appendix~\ref{app:ai}, audit items 1 and 3. I checked the code against the update formulas and preserved the distinction between simulated estimates and the analytic reference curve.
+\ICSField{What I would do differently.}
+I would document the raw estimator before introducing control variates. I would add tests using several drift and volatility settings, rather than relying only on the production baseline.
+\ICSField{One thing I still do not fully understand.}
+I have not established how efficient the selected controls remain for different parameters or nonlinear payoffs. Their observed performance here is not a general variance-reduction guarantee.
+\ICSField{Anything I should have asked for help with earlier.}
+For future work, I would discuss the anticipated bias and sampling precision before fixing the path count and control design.
+\IndividualStatementEnd
+
+%%%%%%%%%%%%%%
+\IndividualStatement{Yanle Li}{2363600}{Non-affine model, correlated increments and numerical-reference validation.}
+\ICSField{The specific things I did this project.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt,topsep=2pt]
+\item I reviewed \texttt{brownian\_increments} in \path{code/nonaffine.py} against equation~\eqref{eq:correlation}. I checked the increment variance, prescribed correlation and construction from two independent normal variables.
+\item I checked \texttt{\_em\_kernel} against equations~\eqref{eq:na-em-x}--\eqref{eq:na-price}. I verified the simultaneous use of the old volatility factor and reviewed the log-price positivity and finiteness diagnostics.
+\item I examined \texttt{em\_terminal}, its nested-grid checks and increment aggregation. I reviewed the three-reference comparisons in Section~\ref{sec:na-strong} and \path{results/nonaffine_reference_checks.csv}, distinguishing numerical differences from exact errors.
+\end{enumerate}
+\ICSField{The hardest conceptual obstacle and how I addressed it.}
+The main issue was understanding what a numerical reference can establish when an exact transition sampler is unavailable. I followed the shared increments through each grid and separated reference-refinement differences from an unknown residual error against the exact solution.
+\ICSField{An AI-assisted output I used, what I changed and why.}
+I reviewed the AI-assisted reference implementation described in Appendix~\ref{app:ai}, audit item 2. I checked aggregation and old-factor updates, and retained the qualification that the fitted strong rate is empirical and the reference-sensitivity screen is not a rigorous bound.
+\ICSField{What I would do differently.}
+I would illustrate the aggregation of increments with a small explicit grid example before presenting the production protocol. Additional fine references would strengthen the sensitivity study when computational resources permit.
+\ICSField{One thing I still do not fully understand.}
+A certified bound for the exact-solution residual of the finest reference is not established here. Agreement between two fine EM grids alone does not supply that bound.
+\ICSField{Anything I should have asked for help with earlier.}
+A useful future checkpoint is to agree on the meaning and limitations of a reference solution before choosing the fitting window.
+\IndividualStatementEnd
+
+%%%%%%%%%%%%%%
+\IndividualStatement{Qingwen Ma}{2361052}{Statistical interpretation, visualisation and cost--accuracy comparison.}
+\ICSField{The specific things I did this project.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt,topsep=2pt]
+\item I checked the strong and weak plots against their saved CSV results and captions in Section~\ref{sec:experiments}. I reviewed axis scales, theoretical reference lines and signed paired confidence intervals, particularly Figure~\ref{fig:na-weak}.
+\item I reviewed the functions \texttt{gbm\_repeat\_study} and \texttt{nonaffine\_repeat\_study} in the supplementary experiment script, \path{code/submission_experiments.py}. I checked the distinction between independent-seed variability and errors caused by the reference grid or fitting-window choice.
+\item I examined \texttt{cost\_accuracy\_study} and Section~\ref{sec:cost}. I checked that methods are compared at a common accuracy target and that the reported kernel timings exclude random-number generation and other workflow costs.
+\end{enumerate}
+\ICSField{The hardest conceptual obstacle and how I addressed it.}
+The main issue was deciding whether small weak differences support a convergence slope. I checked the signed intervals before considering a logarithmic fit. Intervals crossing zero do not resolve the bias magnitude, so I retained the report's decision not to assign a fine-grid weak order.
+\ICSField{An AI-assisted output I used, what I changed and why.}
+I reviewed the AI-assisted slope and cost interpretation in Appendix~\ref{app:ai}, audit item 3. I kept the uncertainty qualifications and distinguished across-run slope spread from a confidence statement about exact-solution error.
+\ICSField{What I would do differently.}
+I would set the required precision before selecting the weak-error sample size. I would complement kernel timings with end-to-end measurements, using the same accuracy criterion for each method.
+\ICSField{One thing I still do not fully understand.}
+A combined uncertainty assessment incorporating sampling, fitting-window choice and numerical-reference bias remains unresolved. The reported intervals and repeated-seed spread measure only specified components.
+\ICSField{Anything I should have asked for help with earlier.}
+For future work, I would agree on the interpretation of zero-containing intervals and the cost boundary before producing comparison figures.
+\IndividualStatementEnd
+
+%%%%%%%%%%%%%%
+\IndividualStatement{Chenyi Xu}{2359968}{Report consistency, reproduction checks and submission organisation.}
+\ICSField{The specific things I did this project.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt,topsep=2pt]
+\item I reviewed the report against Problem 4 and the supplied submission materials. I checked the connection between parameters, experiment descriptions, figure captions and saved numerical results, without treating the generic ODE tasks as additional SDE requirements.
+\item I examined \texttt{check\_saved\_outputs} in \path{code/verify.py} and the checks in \path{tests/test_numerical_methods.py}. I distinguished the small smoke workflow, automated verification and recorded production results rather than treating them as interchangeable evidence.
+\item I checked the README reproduction commands and the organisation of the code archive through \path{code/run_all.py} and \path{code/prepare_submission.py}. I organised the report and code deliverables; the completed presentation is retained as an archived artefact, not a continuing deliverable.
+\end{enumerate}
+\ICSField{The hardest conceptual obstacle and how I addressed it.}
+The main issue was separating technical reproducibility from personal intellectual ownership. I checked which claims are supported by formulas, saved results or automated tests, and kept individual understanding and signatures as separate responsibilities.
+\ICSField{An AI-assisted output I used, what I changed and why.}
+I reviewed the AI-assisted report, verification and submission preparation disclosed in Appendix~\ref{app:ai}. I retained disclosure of mathematical and implementation assistance rather than describing it as language editing alone, and checked consistency between the report and archive.
+\ICSField{What I would do differently.}
+I would maintain a requirement-to-evidence index throughout the project. I would also check portable commands and document assembly before the final submission stage.
+\ICSField{One thing I still do not fully understand.}
+Passing the available tests does not establish coverage of all parameter choices or platforms. Behaviour outside the documented protocol requires additional checks.
+\ICSField{Anything I should have asked for help with earlier.}
+A lesson for future work is to agree on document ownership, validation responsibilities and evidence locations at the start of the project.
+\IndividualStatementEnd

@@ -1,6 +1,7 @@
-"""Build the final report PDF and reproducible code archive.
+"""Validate required artifacts and package the compiled report and code archive.
 
-Run from the archive root after compiling the report.
+Preflight checks detect incomplete report fields and inputs newer than the PDF.
+The output directory receives the report PDF, code ZIP, and checksum manifest.
 """
 from pathlib import Path
 import argparse

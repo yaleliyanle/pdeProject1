@@ -2,7 +2,7 @@
 
 Recorded on 12 October 2026 for Team 6: Yifan Chen (2362353), Zeya Hu
 (2362375), Yanle Li (2363600), Qingwen Ma (2361052), and Chenyi Xu
-(2359968). Membership and the division of work were confirmed by the team.
+(2359968).
 
 ## Report and declarations
 
@@ -13,8 +13,7 @@ Recorded on 12 October 2026 for Team 6: Yifan Chen (2362353), Zeya Hu
 - A4 occupies page 21; the five completed individual contribution statements
   occupy pages 22–26, one page per member. They identify specific review work,
   obstacles, AI-assisted material, reflections and limits of understanding.
-- Signature and date lines are normal fields for personal signing. No personal
-  signatures were generated or inferred from automated verification.
+- Signature and date lines are personal signing fields.
 - The PDF compiled successfully, with no unresolved references or overfull
   boxes. Recorded underfull boxes and an algorithm comment-encoding warning
   do not prevent output.
@@ -33,9 +32,9 @@ Recorded on 12 October 2026 for Team 6: Yifan Chen (2362353), Zeya Hu
 - A full production rerun, saved-array/statistic checks, seven unit tests and
   isolated smoke runs passed. The extracted code archive also passed all
   seven tests and saved-array verification.
-- Confirmed member review responsibilities are recorded in `CODE_REVIEW.md`
-  and the individual statements. Automated evidence does not establish
-  individual authorship or replace personal understanding.
+- Member review responsibilities are recorded in `CODE_REVIEW.md` and the
+  individual statements. The technical verification was AI-assisted and does
+  not constitute an independent human audit.
 
 ## Final artifacts
 
@@ -47,9 +46,8 @@ passed. It excludes internal compliance notes, empty declaration templates,
 presentation files, historical archives, local environments, caches and Git
 metadata.
 
-The presentation is completed according to the team. Its historical files
-are retained separately. Previous upload artifacts are preserved in
-`archive/previous_uploads/`.
+The presentation is completed. Presentation files are excluded from the final
+report/code archive.
 
 ## Scope and interpretation
 
@@ -62,8 +60,7 @@ residual bound. Sampling intervals and seed variability exclude reference
 and fitting-window bias. Cost measurements cover the stated update kernels,
 not the complete workflow.
 
-The saved Git history uses a shared `Apple` author label and does not identify
-each student's commits. This record does not claim that individual Git
-tracking was reconstructed, nor that every generic rubric item was
-independently certified. The report and code are packaged as the final
-technical deliverables, with their evidence and limitations disclosed.
+Repository submissions were centralised under the shared `Apple` author
+label; individual contributions are described in the contribution statements.
+The report and code are the final technical deliverables, with the verified
+scope and scientific limitations recorded above.

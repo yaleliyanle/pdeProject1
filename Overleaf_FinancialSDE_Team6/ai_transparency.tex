@@ -1,0 +1,51 @@
+\section{Team AI Transparency Log}\label{app:ai}
+This log records the AI assistance used in the project, checks of significant scientific claims, and the team's intellectual-ownership responsibilities.
+
+\subsection*{A1. AI tools used}
+Table~\ref{tab:ai-tools} summarises the tools and their uses.
+\begin{table}[H]\centering\small
+\caption{AI assistance used during the project.}\label{tab:ai-tools}
+\begin{tabular}{p{3cm}p{4cm}p{7cm}}\toprule
+Tool & Version/date & Primary use\\\midrule
+OpenAI Codex & September--October 2026; exact model versions were not recorded. & Derivations and explanations; implementation and automated verification; experiment execution; report, figures, presentation and documentation preparation.\\\bottomrule
+\end{tabular}
+\end{table}
+AI output was treated as material to check and interpret, not as an independent authority. Mathematical and implementation assistance are disclosed alongside language and formatting assistance. Raw conversation transcripts are not appended; no transcript archive or content hash is claimed.
+
+\subsection*{A2. Significant AI-assisted claim audits}
+\begin{table}[H]\centering\small
+\caption{Scientific claims, their assumptions and ways they could fail.}\label{tab:ai-audits}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{.8cm}>{\raggedright\arraybackslash}p{7cm}>{\raggedright\arraybackslash}p{6.8cm}@{}}\toprule
+Item & Claim, assumptions and material question & Risk and possible falsifier\\\midrule
+1 & Explain why the GBM EM and Milstein weak-mean curves overlap. Claim: both discrete means equal the expression in equation~\eqref{eq:discrete-mean} for deterministic initial data and independent centered Gaussian increments. & Confusing strong with weak order, omitting the centering of the Milstein term, or presenting the analytic curve as Monte Carlo output. A multiplier expectation different from $1+\mu h$ falsifies the identity.\\[2mm]
+2 & Implement and interpret a numerical reference for the non-affine model: sum shared fine increments, rerun simultaneous old-$Y$ EM, and compare three reference grids. & Updating $X$ with new $Y$, using independent paths across resolutions, or calling grid differences exact errors. A constant-volatility reduction failing the exact GBM test or large reference sensitivity falsifies the implementation/interpretation.\\[2mm]
+3 & Interpret empirical slopes and cost. Claim: Milstein improves strong GBM accuracy but not this mean bias; finer-grid non-affine payoff slopes are unresolved. & Treating correlated fit residuals as independent uncertainty; overlooking zero-containing payoff intervals; comparing speed at different accuracy requirements. Independent-seed spread, signed paired intervals, or matched-target cost can contradict the stated interpretation.\\\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{A3. Verification, decision and limitations}
+\begin{table}[H]\centering\small
+\caption{Checks supporting the claim audits in Table~\ref{tab:ai-audits}.}\label{tab:ai-checks}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{.8cm}>{\raggedright\arraybackslash}p{7cm}>{\raggedright\arraybackslash}p{6.8cm}@{}}\toprule
+Item & Separate numerical check and evidence & Decision, modification and limitation\\\midrule
+1 & A direct conditional-expectation calculation in equations~\eqref{eq:conditional-em}--\eqref{eq:weak}; separate Gaussian-quadrature checks of discrete multiplier moments in \path{code/verify.py}; raw and controlled columns in \path{results/gbm_convergence.csv}. & Retain both curves. Explain their identical first-order mean bias rather than label the overlap a plot error. The statement applies to $\varphi(S)=S$ and $\mu\ne0$, not every payoff.\\[2mm]
+2 & Scalar Python recurrence and constant-volatility oracle in \path{code/verify.py}; saved-array recomputation; three-grid refinements in \path{results/nonaffine_reference_checks.csv}. & Keep log-EM and simultaneous updates. Call strong rates empirical. Treat the 10\% screen as a chosen sensitivity diagnostic, not a rigorous residual bound; do not add an unjustified scalar Milstein correction.\\[2mm]
+3 & Eight independent-seed repetitions and kernel-cost measurement in \texttt{code/submission\_experiments.py}; recorded JSON/CSV and plots; pointwise production payoff intervals. & Add across-run rate variability and same-target cost evidence. Withhold a fine-grid weak-order claim. Seed spread excludes numerical-reference and fit-window bias; kernel timing excludes random-number generation and other costs.\\\bottomrule
+\end{tabular}
+\end{table}
+The checks in Table~\ref{tab:ai-checks} and the separate implementations were produced with AI assistance; they are not presented as an independent human audit. The team reviewed the formulas, implementation interfaces and interpretation according to the responsibilities in Table~\ref{tab:ownership} and the individual statements. Passing automated tests is distinguished from understanding or proving a mathematical claim.
+\newpage
+
+\subsection*{A4. Intellectual ownership declaration}
+We affirm responsibility for the team-owned methods and claims described in this report. We can explain our contributions, justify the stated conclusions and limitations, and describe or modify the relevant methods without AI assistance during the viva. Trusted library operations are distinguished from the mathematical model and numerical choices owned by the team.
+\begin{table}[H]\centering\small
+\caption{Individual responsibilities and trusted interfaces. The two lines in each signature cell are for signature and date, respectively.}\label{tab:ownership}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{1.7cm}>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}p{5.3cm}@{}}\toprule
+Name & Signature / date & Team-owned contribution & Trusted dependency/interface\\\midrule
+Yifan Chen & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Reviewed the models, log-price transformation, EM/Milstein formulas and strong--weak convergence interpretation. & Gaussian increment moments and scalar SDE calculus underpin the derivations; numerical library checks support, but do not replace, those calculations.\\[5mm]
+Zeya Hu & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked GBM coupling, update multipliers, independent-pilot controls and moment/distribution diagnostics. & NumPy normal sampling, array aggregation and products; their shapes, scaling and random-seed protocol are specified by the project.\\[5mm]
+Yanle Li & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked correlated increments, simultaneous log-EM, nested-grid construction and reference-sensitivity interpretation. & NumPy sampling and aggregation; Numba compilation of the EM kernel, with the recurrence and old-state conventions owned by the team.\\[5mm]
+Qingwen Ma & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Reviewed figures, signed confidence intervals, independent-seed rate variability and common-accuracy kernel costs. & NumPy statistical summaries, Matplotlib plotting and Python timing; the error metric, fit windows and timing boundary are explicit project choices.\\[5mm]
+Chenyi Xu & \shortstack[l]{\underline{\hspace{1.3cm}}\\[3mm]\underline{\hspace{1.3cm}}} & Checked report consistency, reproduction commands, test/evidence distinctions and report/code archive organisation. & Python filesystem and ZIP interfaces and LaTeX typesetting; package paths, dependency instructions and document content are checked by the team.\\\bottomrule
+\end{tabular}
+\end{table}

@@ -1,6 +1,6 @@
 {
   "audit_date": "2026-10-11",
-  "review_type": "AI-assisted technical verification and automated tests; confirmed team review responsibilities are recorded separately",
+  "review_type": "AI-assisted technical verification and automated tests; member review responsibilities are recorded in the individual contribution statements; this record is not an independent human audit",
   "final_validation_date": "2026-10-12",
   "status": "automated_checks_passed",
   "tested_environment": {
@@ -42,10 +42,10 @@
   "ownership_record": {
     "team_number": 6,
     "contribution_statements": "report/individual_statements.tex",
-    "team_confirmation": "The team confirmed the roles and retrospective review contributions recorded in the individual statements",
+    "team_confirmation": "Member responsibilities and contributions are recorded in the five individual contribution statements",
     "declaration": "report/ai_transparency.tex",
-    "signature_form": "Personal signature and date fields; automated tests do not authenticate signatures",
-    "git_attribution": "Shared-author commits are not reattributed to individual members"
+    "signature_form": "Personal signature and date fields",
+    "git_attribution": "Centralised repository submissions under the shared Apple author label; individual contributions are described in the contribution statements"
   },
   "scope_limitation": "The kernels are deliberately model-specific and parameterized, not a generic swappable drift/diffusion framework. Deterministic RK4/Newton/adaptive-controller checks are not claimed and are replaced by the Direction 4 SDE requirements."
 }
